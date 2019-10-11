@@ -59,7 +59,7 @@
 #include <vector>
 #include <boost/interprocess/managed_mapped_file.hpp>
 
-namespace basket {
+namespace hcl {
 /**
  * This is a Distributed Set Class. It uses shared memory + RPC + MPI to
  * achieve the data structure.
@@ -138,6 +138,6 @@ class set {
 
 #include "set.cpp"
 
-}  // namespace basket
+}  // namespace hcl
 
 #endif  // INCLUDE_BASKET_SET_SET_H_

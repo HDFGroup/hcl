@@ -141,13 +141,13 @@ int main (int argc,char* argv[])
     BASKET_CONF->SERVER_ON_NODE = server_on_node || is_server;
     BASKET_CONF->SERVER_LIST_PATH = "./server_list";
 
-    basket::priority_queue<KeyType> *priority_queue;
+    hcl::priority_queue<KeyType> *priority_queue;
     if (is_server) {
-        priority_queue = new basket::priority_queue<KeyType>();
+        priority_queue = new hcl::priority_queue<KeyType>();
     }
     MPI_Barrier(MPI_COMM_WORLD);
     if (!is_server) {
-        priority_queue = new basket::priority_queue<KeyType>();
+        priority_queue = new hcl::priority_queue<KeyType>();
     }
 
     std::priority_queue<KeyType> lpriority_queue=std::priority_queue<KeyType>();
@@ -159,7 +159,7 @@ int main (int argc,char* argv[])
     // if(is_server){
     //     std::function<int(int)> func=[](int x){ std::cout<<x<<std::endl;return x; };
     //     int a;
-    //     std::function<std::pair<bool,int>(KeyType&,std::array<int, array_size>&,std::string,int)> putFunc(std::bind(&basket::priority_queue<KeyType,std::array<int,
+    //     std::function<std::pair<bool,int>(KeyType&,std::array<int, array_size>&,std::string,int)> putFunc(std::bind(&hcl::priority_queue<KeyType,std::array<int,
     //                                                                                                                 array_size>>::LocalPutWithCallback<int,int>,priority_queue,std::placeholders::_1, std::placeholders::_2,std::placeholders::_3, std::placeholders::_4));
     //     priority_queue->Bind("CB_Put", func, "APut",putFunc);
     // }

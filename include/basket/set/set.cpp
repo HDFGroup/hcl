@@ -36,7 +36,7 @@ set<KeyType, Compare>::set(CharStruct name_)
           name(name_), segment(), myset(), func_prefix(name_),
           backed_file(BASKET_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
           server_on_node(BASKET_CONF->SERVER_ON_NODE) {
-    AutoTrace trace = AutoTrace("basket::set");
+    AutoTrace trace = AutoTrace("hcl::set");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -183,7 +183,7 @@ set<KeyType, Compare>::set(CharStruct name_)
  */
 template<typename KeyType, typename Compare>
 bool set<KeyType, Compare>::LocalPut(KeyType &key) {
-    AutoTrace trace = AutoTrace("basket::set::Put(local)", key);
+    AutoTrace trace = AutoTrace("hcl::set::Put(local)", key);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex);
     myset->insert(key);
     
@@ -203,7 +203,7 @@ bool set<KeyType, Compare>::Put(KeyType &key) {
     if (key_int == my_server && server_on_node) {
         return LocalPut(key);
     } else {
-        AutoTrace trace = AutoTrace("basket::set::Put(remote)", key);
+        AutoTrace trace = AutoTrace("hcl::set::Put(remote)", key);
         return RPC_CALL_WRAPPER("_Put", key_int, bool, key);
     }
 }
@@ -216,7 +216,7 @@ bool set<KeyType, Compare>::Put(KeyType &key) {
  */
 template<typename KeyType, typename Compare>
 bool set<KeyType, Compare>::LocalGet(KeyType &key) {
-    AutoTrace trace = AutoTrace("basket::set::Get(local)", key);
+    AutoTrace trace = AutoTrace("hcl::set::Get(local)", key);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
             lock(*mutex);
     typename MySet::iterator iterator = myset->find(key);
@@ -240,7 +240,7 @@ bool set<KeyType, Compare>::Get(KeyType &key) {
     if (key_int == my_server && server_on_node) {
         return LocalGet(key);
     } else {
-        AutoTrace trace = AutoTrace("basket::set::Get(remote)", key);
+        AutoTrace trace = AutoTrace("hcl::set::Get(remote)", key);
         typedef bool ret_type;
         return RPC_CALL_WRAPPER("_Get", key_int, ret_type, key);
     }
@@ -248,7 +248,7 @@ bool set<KeyType, Compare>::Get(KeyType &key) {
 
 template<typename KeyType, typename Compare>
 bool set<KeyType, Compare>::LocalErase(KeyType &key) {
-    AutoTrace trace = AutoTrace("basket::set::Erase(local)", key);
+    AutoTrace trace = AutoTrace("hcl::set::Erase(local)", key);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex);
     size_t s = myset->erase(key);
     
@@ -263,7 +263,7 @@ set<KeyType, Compare>::Erase(KeyType &key) {
     if (key_int == my_server && server_on_node) {
         return LocalErase(key);
     } else {
-        AutoTrace trace = AutoTrace("basket::set::Erase(remote)", key);
+        AutoTrace trace = AutoTrace("hcl::set::Erase(remote)", key);
         typedef bool ret_type;
         return RPC_CALL_WRAPPER("_Erase", key_int, ret_type, key);
     }
@@ -278,7 +278,7 @@ set<KeyType, Compare>::Erase(KeyType &key) {
 template<typename KeyType, typename Compare>
 std::vector<KeyType>
 set<KeyType, Compare>::Contains(KeyType &key_start, KeyType &key_end) {
-    AutoTrace trace = AutoTrace("basket::set::Contains", key_start,key_end);
+    AutoTrace trace = AutoTrace("hcl::set::Contains", key_start,key_end);
     std::vector<KeyType> final_values = std::vector<KeyType>();
     auto current_server = ContainsInServer(key_start,key_end);
     final_values.insert(final_values.end(), current_server.begin(), current_server.end());
@@ -294,7 +294,7 @@ set<KeyType, Compare>::Contains(KeyType &key_start, KeyType &key_end) {
 
 template<typename KeyType, typename Compare>
 std::vector<KeyType> set<KeyType, Compare>::GetAllData() {
-    AutoTrace trace = AutoTrace("basket::set::GetAllData");
+    AutoTrace trace = AutoTrace("hcl::set::GetAllData");
     std::vector<KeyType> final_values = std::vector<KeyType>();
     auto current_server = GetAllDataInServer();
     final_values.insert(final_values.end(), current_server.begin(), current_server.end());
@@ -310,7 +310,7 @@ std::vector<KeyType> set<KeyType, Compare>::GetAllData() {
 
 template<typename KeyType, typename Compare>
 std::vector<KeyType> set<KeyType, Compare>::LocalContainsInServer(KeyType &key_start, KeyType &key_end) {
-    AutoTrace trace = AutoTrace("basket::set::ContainsInServer", key_start,key_end);
+    AutoTrace trace = AutoTrace("hcl::set::ContainsInServer", key_start,key_end);
     std::vector<KeyType> final_values = std::vector<KeyType>();
     {
         boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex);
@@ -356,7 +356,7 @@ set<KeyType, Compare>::ContainsInServer(KeyType &key_start, KeyType &key_end) {
 
 template<typename KeyType, typename Compare>
 std::vector<KeyType> set<KeyType, Compare>::LocalGetAllDataInServer() {
-    AutoTrace trace = AutoTrace("basket::set::GetAllDataInServer", NULL);
+    AutoTrace trace = AutoTrace("hcl::set::GetAllDataInServer", NULL);
     std::vector<KeyType> final_values = std::vector<KeyType>();
     {
         boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
@@ -386,7 +386,7 @@ set<KeyType, Compare>::GetAllDataInServer() {
 
 template<typename KeyType, typename Compare>
 std::pair<bool, KeyType> set<KeyType, Compare>::LocalSeekFirst() {
-    AutoTrace trace = AutoTrace("basket::set::SeekFirst(local)");
+    AutoTrace trace = AutoTrace("hcl::set::SeekFirst(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     if (myset->size() > 0) {
         auto iterator = myset->begin();  // We want First (smallest) value in set
@@ -401,7 +401,7 @@ std::pair<bool, KeyType> set<KeyType, Compare>::SeekFirst(uint16_t &key_int) {
     if (key_int == my_server && server_on_node) {
         return LocalSeekFirst();
     } else {
-        AutoTrace trace = AutoTrace("basket::set::SeekFirst(remote)",
+        AutoTrace trace = AutoTrace("hcl::set::SeekFirst(remote)",
                                     key_int);
         typedef std::pair<bool, KeyType> ret_type;
         return RPC_CALL_WRAPPER1("_SeekFirst", key_int, ret_type);
@@ -410,7 +410,7 @@ std::pair<bool, KeyType> set<KeyType, Compare>::SeekFirst(uint16_t &key_int) {
 
 template<typename KeyType, typename Compare>
 std::pair<bool, std::vector<KeyType>> set<KeyType, Compare>::LocalSeekFirstN(uint32_t n){
-    AutoTrace trace = AutoTrace("basket::set::LocalSeekFirstN(local)");
+    AutoTrace trace = AutoTrace("hcl::set::LocalSeekFirstN(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     auto keys = std::vector<KeyType>();
     auto iterator = myset->begin();
@@ -428,7 +428,7 @@ std::pair<bool, std::vector<KeyType>> set<KeyType, Compare>::SeekFirstN(uint16_t
     if (key_int == my_server && server_on_node) {
         return LocalSeekFirstN(n);
     } else {
-        AutoTrace trace = AutoTrace("basket::set::SeekFirstN(remote)", key_int,n);
+        AutoTrace trace = AutoTrace("hcl::set::SeekFirstN(remote)", key_int,n);
         typedef std::pair<bool, KeyType> ret_type;
         return RPC_CALL_WRAPPER("_SeekFirstN", key_int, ret_type,n);
     }
@@ -436,7 +436,7 @@ std::pair<bool, std::vector<KeyType>> set<KeyType, Compare>::SeekFirstN(uint16_t
 
 template<typename KeyType, typename Compare>
 std::pair<bool, KeyType> set<KeyType, Compare>::LocalPopFirst() {
-    AutoTrace trace = AutoTrace("basket::set::PopFirst(local)");
+    AutoTrace trace = AutoTrace("hcl::set::PopFirst(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     if (myset->size() > 0) {
         auto iterator = myset->begin();  // We want First (smallest) value in set
@@ -452,7 +452,7 @@ std::pair<bool, KeyType> set<KeyType, Compare>::PopFirst(uint16_t &key_int) {
     if (key_int == my_server && server_on_node) {
         return LocalPopFirst();
     } else {
-        AutoTrace trace = AutoTrace("basket::set::PopFirst(remote)",
+        AutoTrace trace = AutoTrace("hcl::set::PopFirst(remote)",
                                     key_int);
         typedef std::pair<bool, KeyType> ret_type;
         return RPC_CALL_WRAPPER1("_PopFirst", key_int, ret_type);
@@ -461,7 +461,7 @@ std::pair<bool, KeyType> set<KeyType, Compare>::PopFirst(uint16_t &key_int) {
 
 template<typename KeyType, typename Compare>
 size_t set<KeyType, Compare>::LocalSize() {
-    AutoTrace trace = AutoTrace("basket::set::Size(local)");
+    AutoTrace trace = AutoTrace("hcl::set::Size(local)");
     return myset->size();
 }
 
@@ -470,7 +470,7 @@ size_t set<KeyType, Compare>::Size(uint16_t &key_int) {
     if (key_int == my_server && server_on_node) {
         return LocalSize();
     } else {
-        AutoTrace trace = AutoTrace("basket::set::Size(remote)", key_int);
+        AutoTrace trace = AutoTrace("hcl::set::Size(remote)", key_int);
         typedef size_t ret_type;
         return RPC_CALL_WRAPPER1("_Size", key_int, ret_type);
     }

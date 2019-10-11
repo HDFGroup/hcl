@@ -62,7 +62,7 @@ namespace bip = boost::interprocess;
 
 /** Global Typedefs **/
 
-namespace basket {
+namespace hcl {
 /**
  * This is a Distributed priority_queue Class. It uses shared memory + RPC + MPI
  * to achieve the data structure.
@@ -118,6 +118,6 @@ class priority_queue {
 
 #include "priority_queue.cpp"
 
-}  // namespace basket
+}  // namespace hcl
 
 #endif  // INCLUDE_BASKET_PRIORITY_QUEUE_PRIORITY_QUEUE_H_

@@ -56,7 +56,7 @@
 #include <string>
 #include <vector>
 
-namespace basket {
+namespace hcl {
 /**
  * This is a Distributed MultiMap Class. It uses shared memory + RPC + MPI to
  * achieve the data structure.
@@ -123,6 +123,6 @@ class multimap {
 
 #include "multimap.cpp"
 
-}  // namespace basket
+}  // namespace hcl
 
 #endif  // INCLUDE_BASKET_MULTIMAP_MULTIMAP_H_

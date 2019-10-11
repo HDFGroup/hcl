@@ -60,7 +60,7 @@
 namespace bip = boost::interprocess;
 
 
-namespace basket {
+namespace hcl {
 /**
  * This is a Distributed Queue Class. It uses shared memory +
  * RPC + MPI to achieve the data structure.
@@ -114,6 +114,6 @@ class queue {
 
 #include "queue.cpp"
 
-}  // namespace basket
+}  // namespace hcl
 
 #endif  // INCLUDE_BASKET_QUEUE_QUEUE_H_

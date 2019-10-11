@@ -38,7 +38,7 @@
 
 namespace bip = boost::interprocess;
 
-namespace basket {
+namespace hcl {
 class global_clock {
   private:
     typedef std::chrono::high_resolution_clock::time_point chrono_time;
@@ -70,6 +70,6 @@ class global_clock {
 
 };
 
-}  // namespace basket
+}  // namespace hcl
 
 #endif  // INCLUDE_BASKET_CLOCK_GLOBAL_CLOCK_H_

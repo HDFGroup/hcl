@@ -23,7 +23,7 @@
 #include <basket/common/configuration_manager.h>
 #include <basket/common/singleton.h>
 # define EXPAND_ARGS(...) __VA_ARGS__
-#define BASKET_CONF basket::Singleton<basket::ConfigurationManager>::GetInstance()
+#define BASKET_CONF hcl::Singleton<hcl::ConfigurationManager>::GetInstance()
 
 #define THALLIUM_DEFINE(name, args,args_t...) void Thallium##name(const tl::request &thallium_req, args_t) { thallium_req.respond(name args ); }
 

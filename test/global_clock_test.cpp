@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  basket::global_clock *clock = new basket::global_clock("ticktock", rank < num_servers,
+  hcl::global_clock *clock = new hcl::global_clock("ticktock", rank < num_servers,
                                                          rank % num_servers,
                                                          num_servers,
                                                          true);

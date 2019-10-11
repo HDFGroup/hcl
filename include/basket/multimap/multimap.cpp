@@ -37,7 +37,7 @@ multimap<KeyType, MappedType,
                    name(name_), segment(), mymap(), func_prefix(name_),
                    backed_file(BASKET_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
                    server_on_node(BASKET_CONF->SERVER_ON_NODE) {
-    AutoTrace trace = AutoTrace("basket::multimap");
+    AutoTrace trace = AutoTrace("hcl::multimap");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -149,7 +149,7 @@ multimap<KeyType, MappedType,
 template<typename KeyType, typename MappedType, typename Compare>
 bool multimap<KeyType, MappedType, Compare>::LocalPut(KeyType &key,
                                                       MappedType &data) {
-    AutoTrace trace = AutoTrace("basket::multimap::Put(local)", key, data);
+    AutoTrace trace = AutoTrace("hcl::multimap::Put(local)", key, data);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
             lock(*mutex);
     typename MyMap::iterator iterator = mymap->find(key);
@@ -175,7 +175,7 @@ bool multimap<KeyType, MappedType, Compare>::Put(KeyType &key,
     if (key_int == my_server && server_on_node) {
         return LocalPut(key, data);
     } else {
-        AutoTrace trace = AutoTrace("basket::multimap::Put(remote)", key,
+        AutoTrace trace = AutoTrace("hcl::multimap::Put(remote)", key,
                                     data);
         return RPC_CALL_WRAPPER("_Put", key_int, bool,
                                 key, data);
@@ -191,7 +191,7 @@ bool multimap<KeyType, MappedType, Compare>::Put(KeyType &key,
 template<typename KeyType, typename MappedType, typename Compare>
 std::pair<bool, MappedType>
 multimap<KeyType, MappedType, Compare>::LocalGet(KeyType &key) {
-    AutoTrace trace = AutoTrace("basket::multimap::Get(local)", key);
+    AutoTrace trace = AutoTrace("hcl::multimap::Get(local)", key);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
             lock(*mutex);
     typename MyMap::iterator iterator = mymap->find(key);
@@ -217,7 +217,7 @@ multimap<KeyType, MappedType, Compare>::Get(KeyType &key) {
     if (key_int == my_server && server_on_node) {
         return LocalGet(key);
     } else {
-        AutoTrace trace = AutoTrace("basket::multimap::Get(remote)", key);
+        AutoTrace trace = AutoTrace("hcl::multimap::Get(remote)", key);
         typedef std::pair<bool, MappedType> ret_type;
         return RPC_CALL_WRAPPER("_Get", key_int, ret_type,
                                 key);
@@ -227,7 +227,7 @@ multimap<KeyType, MappedType, Compare>::Get(KeyType &key) {
 template<typename KeyType, typename MappedType, typename Compare>
 std::pair<bool, MappedType>
 multimap<KeyType, MappedType, Compare>::LocalErase(KeyType &key) {
-    AutoTrace trace = AutoTrace("basket::multimap::Erase(local)", key);
+    AutoTrace trace = AutoTrace("hcl::multimap::Erase(local)", key);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
             lock(*mutex);
     size_t s = mymap->erase(key);
@@ -242,7 +242,7 @@ multimap<KeyType, MappedType, Compare>::Erase(KeyType &key) {
     if (key_int == my_server && server_on_node) {
         return LocalErase(key);
     } else {
-        AutoTrace trace = AutoTrace("basket::multimap::Erase(remote)", key);
+        AutoTrace trace = AutoTrace("hcl::multimap::Erase(remote)", key);
         typedef std::pair<bool, MappedType> ret_type;
         return RPC_CALL_WRAPPER("_Erase", key_int, ret_type, key);
     }
@@ -258,7 +258,7 @@ multimap<KeyType, MappedType, Compare>::Erase(KeyType &key) {
 template<typename KeyType, typename MappedType, typename Compare>
 std::vector<std::pair<KeyType, MappedType>>
 multimap<KeyType, MappedType, Compare>::Contains(KeyType &key) {
-    AutoTrace trace = AutoTrace("basket::multimap::Contains", key);
+    AutoTrace trace = AutoTrace("hcl::multimap::Contains", key);
     std::vector<std::pair<KeyType, MappedType>> final_values =
             std::vector<std::pair<KeyType, MappedType>>();
     auto current_server = ContainsInServer(key);
@@ -278,7 +278,7 @@ multimap<KeyType, MappedType, Compare>::Contains(KeyType &key) {
 template<typename KeyType, typename MappedType, typename Compare>
 std::vector<std::pair<KeyType, MappedType>>
 multimap<KeyType, MappedType, Compare>::GetAllData() {
-    AutoTrace trace = AutoTrace("basket::multimap::GetAllData");
+    AutoTrace trace = AutoTrace("hcl::multimap::GetAllData");
     std::vector<std::pair<KeyType, MappedType>> final_values =
             std::vector<std::pair<KeyType, MappedType>>();
     auto current_server = GetAllDataInServer();
@@ -298,7 +298,7 @@ template<typename KeyType, typename MappedType, typename Compare>
 std::vector<std::pair<KeyType, MappedType>>
 multimap<KeyType, MappedType,
          Compare>::LocalContainsInServer(KeyType &key) {
-    AutoTrace trace = AutoTrace("basket::multimap::ContainsInServer", key);
+    AutoTrace trace = AutoTrace("hcl::multimap::ContainsInServer", key);
     std::vector<std::pair<KeyType, MappedType>> final_values =
             std::vector<std::pair<KeyType, MappedType>>();
     {
@@ -349,7 +349,7 @@ multimap<KeyType, MappedType,
 template<typename KeyType, typename MappedType, typename Compare>
 std::vector<std::pair<KeyType, MappedType>>
 multimap<KeyType, MappedType, Compare>::LocalGetAllDataInServer() {
-    AutoTrace trace = AutoTrace("basket::multimap::GetAllDataInServer");
+    AutoTrace trace = AutoTrace("hcl::multimap::GetAllDataInServer");
     std::vector<std::pair<KeyType, MappedType>> final_values =
             std::vector<std::pair<KeyType, MappedType>>();
     {

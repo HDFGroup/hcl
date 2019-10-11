@@ -72,7 +72,7 @@ clients to work with servers that are not on their node.
 When creating a basket structure, you currently need to pass a lot of
 parameters. For example:
 
-basket::unordered_map(std::string name_, bool is_server_,
+hcl::unordered_map(std::string name_, bool is_server_,
                       uint16_t my_server_, int num_servers_,
                       bool server_on_node_,
                       std::string processor_name_ = "");
@@ -95,8 +95,8 @@ the 40 Gbit network.
 
 unordered_map makes the assumption that a node is running a server and
 multiple clients. the unordered_map_test will perform puts and gets on a
-std::unordered_map locally, a basket::unordered_map locally, and a
-basket::unordered_map remotely.
+std::unordered_map locally, a hcl::unordered_map locally, and a
+hcl::unordered_map remotely.
 
 ### Other Structures
 

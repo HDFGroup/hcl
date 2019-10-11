@@ -58,7 +58,7 @@
 #include <map>
 #include <vector>
 
-namespace basket {
+namespace hcl {
 /**
  * This is a Distributed Map Class. It uses shared memory + RPC + MPI to
  * achieve the data structure.
@@ -124,6 +124,6 @@ class map {
 
 #include "map.cpp"
 
-}  // namespace basket
+}  // namespace hcl
 
 #endif  // INCLUDE_BASKET_MAP_MAP_H_

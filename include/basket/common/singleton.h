@@ -40,7 +40,7 @@
  * Singleton<T>::GetInstance()
  * @tparam T
  */
- namespace basket{
+ namespace hcl{
 template<typename T>
 class Singleton {
   public:

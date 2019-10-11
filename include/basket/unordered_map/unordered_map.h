@@ -65,7 +65,7 @@
 
 /** Global Typedefs **/
 
-namespace basket {
+namespace hcl {
 /**
  * This is a Distributed HashMap Class. It uses shared memory + RPC + MPI to
  * achieve the data structure.
@@ -259,6 +259,6 @@ class unordered_map {
 
 #include "unordered_map.cpp"
 
-}  // namespace basket
+}  // namespace hcl
 
 #endif  // INCLUDE_BASKET_UNORDERED_MAP_UNORDERED_MAP_H_

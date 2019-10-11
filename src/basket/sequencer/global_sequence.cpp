@@ -20,7 +20,7 @@
 
 #include <basket/sequencer/global_sequence.h>
 
-namespace basket {
+namespace hcl {
 
 global_sequence::~global_sequence() {
     if (is_server) bip::file_mapping::remove(backed_file.c_str());
@@ -34,7 +34,7 @@ global_sequence::global_sequence(std::string name_)
           name(name_), segment(),
           func_prefix(name_),
           server_on_node(BASKET_CONF->SERVER_ON_NODE) {
-    AutoTrace trace = AutoTrace("basket::global_sequence");
+    AutoTrace trace = AutoTrace("hcl::global_sequence");
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     name = name+"_"+std::to_string(my_server);
@@ -44,7 +44,7 @@ global_sequence::global_sequence(std::string name_)
 #ifdef BASKET_ENABLE_RPCLIB
             case RPCLIB: {
                 std::function<uint64_t(void)> getNextSequence(std::bind(
-                    &basket::global_sequence::LocalGetNextSequence, this));
+                    &hcl::global_sequence::LocalGetNextSequence, this));
                 rpc->bind(func_prefix+"_GetNextSequence", getNextSequence);
                 break;
             }
@@ -58,7 +58,7 @@ global_sequence::global_sequence(std::string name_)
 #if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
                 {
                     std::function<void(const tl::request &)> getNextSequence(std::bind(
-                        &basket::global_sequence::ThalliumLocalGetNextSequence, this,
+                        &hcl::global_sequence::ThalliumLocalGetNextSequence, this,
                         std::placeholders::_1));
                     rpc->bind(func_prefix+"_GetNextSequence", getNextSequence);
                     break;
@@ -108,4 +108,4 @@ uint64_t global_sequence::GetNextSequenceServer(uint16_t &server) {
     }
 }
 
-}  // namespace basket
+}  // namespace hcl

@@ -37,7 +37,7 @@
 
 namespace bip = boost::interprocess;
 
-namespace basket {
+namespace hcl {
 class global_sequence {
   private:
     uint64_t* value;
@@ -67,6 +67,6 @@ class global_sequence {
 
 };
 
-}  // namespace basket
+}  // namespace hcl
 
 #endif  // INCLUDE_BASKET_SEQUENCER_GLOBAL_SEQUENCE_H_

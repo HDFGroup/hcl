@@ -33,7 +33,7 @@
 #include <basket/common/data_structures.h>
 #include "typedefs.h"
 
-namespace basket{
+namespace hcl{
 
     class ConfigurationManager {
     public:

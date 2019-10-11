@@ -39,7 +39,7 @@ unordered_map<KeyType, MappedType>::unordered_map(CharStruct name_)
           backed_file(BASKET_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
           server_on_node(BASKET_CONF->SERVER_ON_NODE) {
     // init my_server, num_servers, server_on_node, processor_name from RPC
-    AutoTrace trace = AutoTrace("basket::unordered_map");
+    AutoTrace trace = AutoTrace("hcl::unordered_map");
 
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);

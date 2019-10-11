@@ -36,7 +36,7 @@ priority_queue<MappedType,
                          name(name_), segment(), queue(), func_prefix(name_),
                          backed_file(BASKET_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
                          server_on_node(BASKET_CONF->SERVER_ON_NODE) {
-    AutoTrace trace = AutoTrace("basket::priority_queue");
+    AutoTrace trace = AutoTrace("hcl::priority_queue");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -60,17 +60,17 @@ priority_queue<MappedType,
 #ifdef BASKET_ENABLE_RPCLIB
             case RPCLIB: {
                 std::function<bool(MappedType &)> pushFunc(
-                    std::bind(&basket::priority_queue<MappedType,
+                    std::bind(&hcl::priority_queue<MappedType,
                               Compare>::LocalPush, this,
                               std::placeholders::_1));
                 std::function<std::pair<bool, MappedType>(void)> popFunc(std::bind(
-                    &basket::priority_queue<MappedType,
+                    &hcl::priority_queue<MappedType,
                     Compare>::LocalPop, this));
                 std::function<size_t(void)> sizeFunc(std::bind(
-                    &basket::priority_queue<MappedType,
+                    &hcl::priority_queue<MappedType,
                     Compare>::LocalSize, this));
                 std::function<std::pair<bool, MappedType>(void)> topFunc(std::bind(
-                    &basket::priority_queue<MappedType,
+                    &hcl::priority_queue<MappedType,
                     Compare>::LocalTop, this));
                 rpc->bind(func_prefix+"_Push", pushFunc);
                 rpc->bind(func_prefix+"_Pop", popFunc);
@@ -88,17 +88,17 @@ priority_queue<MappedType,
 #if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
                 {
                     std::function<void(const tl::request &, MappedType &)> pushFunc(
-                        std::bind(&basket::priority_queue<MappedType,
+                        std::bind(&hcl::priority_queue<MappedType,
                                   Compare>::ThalliumLocalPush, this,
                                   std::placeholders::_1, std::placeholders::_2));
                     std::function<void(const tl::request &)> popFunc(std::bind(
-                        &basket::priority_queue<MappedType,
+                        &hcl::priority_queue<MappedType,
                         Compare>::ThalliumLocalPop, this, std::placeholders::_1));
                     std::function<void(const tl::request &)> sizeFunc(std::bind(
-                        &basket::priority_queue<MappedType,
+                        &hcl::priority_queue<MappedType,
                         Compare>::ThalliumLocalSize, this, std::placeholders::_1));
                     std::function<void(const tl::request &)> topFunc(std::bind(
-                        &basket::priority_queue<MappedType,
+                        &hcl::priority_queue<MappedType,
                         Compare>::ThalliumLocalTop, this,
                         std::placeholders::_1));
                     rpc->bind(func_prefix+"_Push", pushFunc);
@@ -130,7 +130,7 @@ priority_queue<MappedType,
  */
 template<typename MappedType, typename Compare>
 bool priority_queue<MappedType, Compare>::LocalPush(MappedType &data) {
-    AutoTrace trace = AutoTrace("basket::priority_queue::Push(local)",
+    AutoTrace trace = AutoTrace("hcl::priority_queue::Push(local)",
                                 data);
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     queue->push(data);
@@ -150,7 +150,7 @@ bool priority_queue<MappedType, Compare>::Push(MappedType &data,
     if (key_int == my_server && server_on_node) {
         return LocalPush(data);
     } else {
-        AutoTrace trace = AutoTrace("basket::priority_queue::Push(remote)",
+        AutoTrace trace = AutoTrace("hcl::priority_queue::Push(remote)",
                                     data, key_int);
         return RPC_CALL_WRAPPER("_Push", key_int, bool,
                                 data);
@@ -166,7 +166,7 @@ bool priority_queue<MappedType, Compare>::Push(MappedType &data,
 template<typename MappedType, typename Compare>
 std::pair<bool, MappedType>
 priority_queue<MappedType, Compare>::LocalPop() {
-    AutoTrace trace = AutoTrace("basket::priority_queue::Pop(local)");
+    AutoTrace trace = AutoTrace("hcl::priority_queue::Pop(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     if (queue->size() > 0) {
         MappedType value = queue->top();
@@ -189,7 +189,7 @@ priority_queue<MappedType, Compare>::Pop(uint16_t &key_int) {
     if (key_int == my_server && server_on_node) {
         return LocalPop();
     } else {
-        AutoTrace trace = AutoTrace("basket::priority_queue::Pop(remote)",
+        AutoTrace trace = AutoTrace("hcl::priority_queue::Pop(remote)",
                                     key_int);
         typedef std::pair<bool, MappedType> ret_type;
         return RPC_CALL_WRAPPER1("_Pop", key_int, ret_type); 
@@ -205,7 +205,7 @@ priority_queue<MappedType, Compare>::Pop(uint16_t &key_int) {
 template<typename MappedType, typename Compare>
 std::pair<bool, MappedType>
 priority_queue<MappedType, Compare>::LocalTop() {
-    AutoTrace trace = AutoTrace("basket::priority_queue::Top(local)");
+    AutoTrace trace = AutoTrace("hcl::priority_queue::Top(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     if (queue->size() > 0) {
         MappedType value = queue->top();
@@ -227,7 +227,7 @@ priority_queue<MappedType, Compare>::Top(uint16_t &key_int) {
     if (key_int == my_server && server_on_node) {
         return LocalTop();
     } else {
-        AutoTrace trace = AutoTrace("basket::priority_queue::Top(remote)",
+        AutoTrace trace = AutoTrace("hcl::priority_queue::Top(remote)",
                                     key_int);
         typedef std::pair<bool, MappedType> ret_type;
         return RPC_CALL_WRAPPER1("_Top", key_int, ret_type);
@@ -241,7 +241,7 @@ priority_queue<MappedType, Compare>::Top(uint16_t &key_int) {
  */
 template<typename MappedType, typename Compare>
 size_t priority_queue<MappedType, Compare>::LocalSize() {
-    AutoTrace trace = AutoTrace("basket::priority_queue::Size(local)");
+    AutoTrace trace = AutoTrace("hcl::priority_queue::Size(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     size_t value = queue->size();
     return value;
@@ -258,7 +258,7 @@ size_t priority_queue<MappedType, Compare>::Size(uint16_t &key_int) {
     if (key_int == my_server && server_on_node) {
         return LocalSize();
     } else {
-        AutoTrace trace = AutoTrace("basket::priority_queue::Top(remote)",
+        AutoTrace trace = AutoTrace("hcl::priority_queue::Top(remote)",
                                     key_int);
         return RPC_CALL_WRAPPER1("_Size", key_int, size_t);
     }

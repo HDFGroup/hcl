@@ -112,7 +112,7 @@ RPC::RPC() : server_list(),
 
 #if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
 void RPC::init_engine_and_endpoints(CharStruct protocol) {
-    thallium_engine = basket::Singleton<tl::engine>::GetInstance(protocol.c_str(), MARGO_CLIENT_MODE);
+    thallium_engine = hcl::Singleton<tl::engine>::GetInstance(protocol.c_str(), MARGO_CLIENT_MODE);
 
     thallium_endpoints.reserve(server_list.size());
     for (std::vector<CharStruct>::size_type i = 0; i < server_list.size(); ++i) {
@@ -147,7 +147,7 @@ void RPC::run(size_t workers) {
 #endif
 #if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
                 {
-		  thallium_engine = basket::Singleton<tl::engine>::GetInstance(engine_init_str.c_str(), THALLIUM_SERVER_MODE,true,BASKET_CONF->RPC_THREADS);
+		  thallium_engine = hcl::Singleton<tl::engine>::GetInstance(engine_init_str.c_str(), THALLIUM_SERVER_MODE,true,BASKET_CONF->RPC_THREADS);
                     break;
                 }
 #endif
