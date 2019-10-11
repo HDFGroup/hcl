@@ -18,24 +18,14 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include <hcl.h>
-#include <iostream>
-#include <mpi.h>
+#ifndef INCLUDE_BASKET_COMMON_CONSTANTS_H_
+#define INCLUDE_BASKET_COMMON_CONSTANTS_H_
+#include <stdint.h>
+#include <hcl/common/data_structures.h>
 
-int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int my_server = 0;
-    hcl::queue<int> int_queue("QUEUE", rank == my_server, my_server, 1, true);
-    if (rank == my_server) {
-        int_queue.WaitForElement(my_server);
-        auto result = int_queue.Pop(my_server);
-        if (result.first) {
-            std::cout << result.second << std::endl;
-        }
-    } else {
-        int_queue.Push(42, my_server);
-    }
-    MPI_Finalize();
-}
+const uint16_t RPC_PORT = 8080;
+const uint16_t RPC_THREADS = 1;
+const int TEST_REQUEST_SIZE = 1000;
+const CharStruct PATH_SEPARATOR = "/";
+
+#endif  // INCLUDE_BASKET_COMMON_CONSTANTS_H_

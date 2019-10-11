@@ -29,8 +29,8 @@
 #include <execinfo.h>
 #include <chrono>
 #include <unordered_map>
-#include <basket/common/data_structures.h>
-#include <basket/unordered_map/unordered_map.h>
+#include <hcl/common/data_structures.h>
+#include <hcl/unordered_map/unordered_map.h>
 
 struct KeyType{
     size_t a;
@@ -127,7 +127,7 @@ int main (int argc,char* argv[])
     const int array_size=TEST_REQUEST_SIZE;
 
     if (size_of_request != array_size) {
-        printf("Please set TEST_REQUEST_SIZE in include/basket/common/constants.h instead. Testing with %d\n", array_size);
+        printf("Please set TEST_REQUEST_SIZE in include/hcl/common/constants.h instead. Testing with %d\n", array_size);
     }
 
     std::array<int,array_size> my_vals=std::array<int,array_size>();

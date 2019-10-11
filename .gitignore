@@ -18,14 +18,14 @@ test/map_test
 test/multimap_test
 test/queue_test
 test/priority_queue_test
-libbasket.so*
-basket.pc
+libhcl.so*
+hcl.pc
 DartConfiguration.tcl
 cmake-build-debug/DartConfiguration.tcl
-cmake-build-debug/basket.cbp
-cmake-build-debug/basket.pc
-cmake-build-debug/libbasket.so
-cmake-build-debug/libbasket.so.1
-cmake-build-debug/libbasket.so.1.0.0
+cmake-build-debug/hcl.cbp
+cmake-build-debug/hcl.pc
+cmake-build-debug/libhcl.so
+cmake-build-debug/libhcl.so.1
+cmake-build-debug/libhcl.so.1.0.0
 # Project exclude paths
 /cmake-build-debug/

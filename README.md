@@ -1,6 +1,6 @@
 # HCL Library
 
-The HCL Library, or libbasket, is a distributed data structure
+The HCL Library, or libhcl, is a distributed data structure
 library. It consists of several templated data structures built on top
 of MPI, including a hashmap, map, multimap, priority queue, and
 message queue. There's also a global clock and a sequencer.
@@ -10,7 +10,7 @@ message queue. There's also a global clock and a sequencer.
 The HCL Library compiles with cmake, so the general procedure is
 
 ```bash
-cd basket
+cd hcl
 mkdir build
 cmake -DBASKET_ENABLE_RPCLIB=true ..
 make
@@ -19,7 +19,7 @@ sudo make install
 If you want to install somewhere besides `/usr/local`, then use
 
 ```bash
-cd basket
+cd hcl
 mkdir build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/wherever -DBASKET_ENABLE_RPCLIB=true ..
 make
@@ -47,13 +47,13 @@ transport. Also of note is that we uses libfabric (ofi) as the default
 Mercury transport (for TCP and RoCE (verbs)). We used libfabric
 version 1.8.x. If you would rather use a different Mercury transport,
 please change the configuration via
-include/basket/common/configuration_manager.h. The TCP_CONF string is
+include/hcl/common/configuration_manager.h. The TCP_CONF string is
 what we use for tcp via Mercury, and the VERBS_CONF string is how we
 do verbs via Mercury. The VERBS_DOMAIN is the domain used for RoCE.
 
 ## Usage
 
-Since libbasket uses MPI, data structures have to be declared on the
+Since libhcl uses MPI, data structures have to be declared on the
 server and clients. Each data structure is declared with a name, a
 boolean to indicate whether it is on the server or not, the MPI rank
 of the server, and the number of servers it utilizes (generally
@@ -69,7 +69,7 @@ clients to work with servers that are not on their node.
 
 ### Structure Initialization
 
-When creating a basket structure, you currently need to pass a lot of
+When creating a hcl structure, you currently need to pass a lot of
 parameters. For example:
 
 hcl::unordered_map(std::string name_, bool is_server_,
@@ -127,20 +127,20 @@ unordered_map test.
 
 The command to run a test without ctest is:
 
-LD_PRELOAD=`pwd`/libbasket.so mpirun -f test/hostfile -n 4
+LD_PRELOAD=`pwd`/libhcl.so mpirun -f test/hostfile -n 4
 test/unordered_map_test 2 500 1000 1 0
 
 The arguments are ranks_per_server, num_requests, size_of_request,
 server_on_node, and debug. The variable size_of_request should be
-equal to TEST_REQUEST_SIZE in include/basket/common/constants.h, since
+equal to TEST_REQUEST_SIZE in include/hcl/common/constants.h, since
 we have not yet found a way to make dynamically configurable request
 sizes (due to serialization).
 
 ## Configure
 
 ```bash
-$ mkdir $HOME/basket_build
-$ cd $HOME/basket_build
+$ mkdir $HOME/hcl_build
+$ cd $HOME/hcl_build
 $ $HOME/software/install/bin/cmake \
 -DCMAKE_BUILD_TYPE=Debug \
 -DCMAKE_C_COMPILER=/opt/ohpc/pub/compiler/gcc/7.3.0/bin/gcc \
@@ -160,7 +160,7 @@ $ $HOME/software/install/bin/cmake --build ./ --target all -- -j 8
 ## Run
 
 ```bash
-$ cd $HOME/basket_build/test
+$ cd $HOME/hcl_build/test
 $ ctest -V
 ```
 ## Patching Mercury 1.0.1 to work with RoCE

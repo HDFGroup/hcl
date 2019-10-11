@@ -1,4 +1,4 @@
-# target_link_libraries(DistributedHashMapTest ${CMAKE_BINARY_DIR}/libbasket.so)
+# target_link_libraries(DistributedHashMapTest ${CMAKE_BINARY_DIR}/libhcl.so)
 
 set(examples unordered_map_test map_test queue_test priority_queue_test multimap_test set_test)
 # global_clock_test global_sequence_test
@@ -23,18 +23,18 @@ foreach (example ${examples})
     add_dependencies(${example} ${PROJECT_NAME})
     add_dependencies(${example} copy_hostfile)
     add_dependencies(${example} copy_server_list)
-    set_target_properties(${example} PROPERTIES ENVIRONMENT LD_PRELOAD=${CMAKE_BINARY_DIR}/libbasket.so)
+    set_target_properties(${example} PROPERTIES ENVIRONMENT LD_PRELOAD=${CMAKE_BINARY_DIR}/libhcl.so)
     target_link_libraries(${example} ${PROJECT_NAME})
     set_target_properties (${example} PROPERTIES FOLDER test)
 endforeach()
 
-message(INFO ${CMAKE_BINARY_DIR}/libbasket.so)
+message(INFO ${CMAKE_BINARY_DIR}/libhcl.so)
 
 # Define MPI test case template
 function(mpi target mpi_procs example ranks_per_process num_requests size_of_request server_on_node debug)
     set (test_parameters  -np ${mpi_procs} -f "${CMAKE_BINARY_DIR}/test/hostfile" "${CMAKE_BINARY_DIR}/test/${example}" ${ranks_per_process} ${num_requests} ${size_of_request} ${server_on_node} ${debug})
     add_test(NAME ${target}_${example}_MPI_${mpi_procs}_${ranks_per_process}_${num_requests}_${size_of_request}_${server_on_node}_${debug} COMMAND "mpirun" ${test_parameters})
-    set_tests_properties(${target}_${example}_MPI_${mpi_procs}_${ranks_per_process}_${num_requests}_${size_of_request}_${server_on_node}_${debug} PROPERTIES ENVIRONMENT LD_PRELOAD=${CMAKE_BINARY_DIR}/libbasket.so)
+    set_tests_properties(${target}_${example}_MPI_${mpi_procs}_${ranks_per_process}_${num_requests}_${size_of_request}_${server_on_node}_${debug} PROPERTIES ENVIRONMENT LD_PRELOAD=${CMAKE_BINARY_DIR}/libhcl.so)
 endfunction()
 
 # Define MPI test case

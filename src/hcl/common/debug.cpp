@@ -18,24 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include <hcl.h>
-#include <iostream>
-#include <mpi.h>
+#include <hcl/common/debug.h>
 
-int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int my_server = 0;
-    hcl::queue<int> int_queue("QUEUE", rank == my_server, my_server, 1, true);
-    if (rank == my_server) {
-        int_queue.WaitForElement(my_server);
-        auto result = int_queue.Pop(my_server);
-        if (result.first) {
-            std::cout << result.second << std::endl;
-        }
-    } else {
-        int_queue.Push(42, my_server);
-    }
-    MPI_Finalize();
-}
+int AutoTrace::rank=-1;
+int AutoTrace::item=0;

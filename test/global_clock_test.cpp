@@ -18,7 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include <basket/clock/global_clock.h>
+#include <hcl/clock/global_clock.h>
 #include <iostream>
 #include <mpi.h>
 

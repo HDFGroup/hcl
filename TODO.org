@@ -6,10 +6,10 @@
 *** Ensure that comments are accurate and clear
 *** Spellcheck comments
 ** DONE README
-*** What is libbasket?
-*** How do I use libbasket?
+*** What is libhcl?
+*** How do I use libhcl?
 ** DONE INSTALL
-*** How do I compile libbasket?
+*** How do I compile libhcl?
 **** Dependencies
 **** General procedure
 ***** (eg. `cmake .`, `make`, `make install`)
