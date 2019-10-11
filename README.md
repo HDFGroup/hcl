@@ -1,13 +1,13 @@
-# Basket Library
+# HCL Library
 
-The Basket Library, or libbasket, is a distributed data structure
+The HCL Library, or libbasket, is a distributed data structure
 library. It consists of several templated data structures built on top
 of MPI, including a hashmap, map, multimap, priority queue, and
 message queue. There's also a global clock and a sequencer.
 
 ## Compilation
 
-The Basket Library compiles with cmake, so the general procedure is
+The HCL Library compiles with cmake, so the general procedure is
 
 ```bash
 cd basket
@@ -100,7 +100,7 @@ basket::unordered_map remotely.
 
 ### Other Structures
 
-Basket also has queues, priority_queues, multimaps, maps,
+HCL also has queues, priority_queues, multimaps, maps,
 global_clocks, and global_sequence (sequencers). However, the tests
 for these structures are not ironed out yet. The structures are fully
 functional, however, and you should be able to figure them out by
@@ -165,7 +165,7 @@ $ ctest -V
 ```
 ## Patching Mercury 1.0.1 to work with RoCE
 
-For Basket to work with Mercury 1.0.1 with RoCE, it needs a patched
+For HCL to work with Mercury 1.0.1 with RoCE, it needs a patched
 version of Mercury. The patch allows you to specify a domain to be
 used when connecting to a verbs interface (rather than looking up the
 domain), which is the only practical way to use RoCE. This patch will

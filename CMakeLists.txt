@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(basket VERSION 1.0.0 DESCRIPTION "Basket: A library for flexible distributed data containers")
+project(basket VERSION 1.0.0 DESCRIPTION "HCL: A library for flexible distributed data containers")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-2 -g3")
