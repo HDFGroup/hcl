@@ -29,13 +29,13 @@
  *-------------------------------------------------------------------------
  */
 
-#ifndef INCLUDE_BASKET_COMMON_DATA_STRUCTURES_H_
-#define INCLUDE_BASKET_COMMON_DATA_STRUCTURES_H_
+#ifndef INCLUDE_HCL_COMMON_DATA_STRUCTURES_H_
+#define INCLUDE_HCL_COMMON_DATA_STRUCTURES_H_
 
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
 #include <rpc/msgpack.hpp>
 #endif
 
@@ -131,7 +131,7 @@ struct hash<CharStruct> {
 };
 }
 
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
 namespace clmdep_msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
     namespace adaptor {
@@ -198,4 +198,4 @@ std::ostream &operator<<(std::ostream &os, std::vector<T> const &ms){
     os << "]";
     return os;
 }
-#endif  // INCLUDE_BASKET_COMMON_DATA_STRUCTURES_H_
+#endif  // INCLUDE_HCL_COMMON_DATA_STRUCTURES_H_

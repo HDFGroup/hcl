@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_SET_SET_H_
-#define INCLUDE_BASKET_SET_SET_H_
+#ifndef INCLUDE_HCL_SET_SET_H_
+#define INCLUDE_HCL_SET_SET_H_
 
 /**
  * Include Headers
@@ -32,13 +32,13 @@
 /** MPI Headers**/
 #include <mpi.h>
 /** RPC Lib Headers**/
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
 #include <rpc/server.h>
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #endif
 /** Thallium Headers **/
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 #include <thallium.hpp>
 #endif
 
@@ -106,7 +106,7 @@ class set {
     std::pair<bool, std::vector<KeyType>> LocalSeekFirstN(uint32_t n);
 
 
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
     THALLIUM_DEFINE(LocalPut, (key), KeyType &key)
     THALLIUM_DEFINE(LocalGet, (key), KeyType &key)
     THALLIUM_DEFINE(LocalErase, (key), KeyType &key)
@@ -140,4 +140,4 @@ class set {
 
 }  // namespace hcl
 
-#endif  // INCLUDE_BASKET_SET_SET_H_
+#endif  // INCLUDE_HCL_SET_SET_H_

@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_
-#define INCLUDE_BASKET_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_
+#ifndef INCLUDE_HCL_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_
+#define INCLUDE_HCL_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_
 
 /* Constructor to deallocate the shared memory*/
 template<typename MappedType, typename Compare>
@@ -30,12 +30,12 @@ priority_queue<MappedType, Compare>::~priority_queue() {
 template<typename MappedType, typename Compare>
 priority_queue<MappedType,
                Compare>::priority_queue(std::string name_)
-                       : is_server(BASKET_CONF->IS_SERVER), my_server(BASKET_CONF->MY_SERVER),
-                         num_servers(BASKET_CONF->NUM_SERVERS),
-                         comm_size(1), my_rank(0), memory_allocated(BASKET_CONF->MEMORY_ALLOCATED),
+                       : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
+                         num_servers(HCL_CONF->NUM_SERVERS),
+                         comm_size(1), my_rank(0), memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
                          name(name_), segment(), queue(), func_prefix(name_),
-                         backed_file(BASKET_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
-                         server_on_node(BASKET_CONF->SERVER_ON_NODE) {
+                         backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
+                         server_on_node(HCL_CONF->SERVER_ON_NODE) {
     AutoTrace trace = AutoTrace("hcl::priority_queue");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
@@ -44,7 +44,7 @@ priority_queue<MappedType,
        spawned on one node*/
     this->name += "_" + std::to_string(my_server);
     /* if current rank is a server */
-    rpc = Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
+    rpc = Singleton<RPCFactory>::GetInstance()->GetRPC(HCL_CONF->RPC_PORT);
     if (is_server) {
         /* Delete existing instance of shared memory space*/
         bip::file_mapping::remove(backed_file.c_str());
@@ -56,8 +56,8 @@ priority_queue<MappedType,
         queue = segment.construct<Queue>("Queue")(Compare(), alloc_inst);
         mutex = segment.construct<bip::interprocess_mutex>("mtx")();
         /* Create a RPC server and map the methods to it. */
-        switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+        switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
                 std::function<bool(MappedType &)> pushFunc(
                     std::bind(&hcl::priority_queue<MappedType,
@@ -79,13 +79,13 @@ priority_queue<MappedType,
                 break;
             }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
             case THALLIUM_TCP:
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
             case THALLIUM_ROCE:
 #endif
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
                 {
                     std::function<void(const tl::request &, MappedType &)> pushFunc(
                         std::bind(&hcl::priority_queue<MappedType,
@@ -263,4 +263,4 @@ size_t priority_queue<MappedType, Compare>::Size(uint16_t &key_int) {
         return RPC_CALL_WRAPPER1("_Size", key_int, size_t);
     }
 }
-#endif  // INCLUDE_BASKET_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_
+#endif  // INCLUDE_HCL_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_

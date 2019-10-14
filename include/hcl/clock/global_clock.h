@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_CLOCK_GLOBAL_CLOCK_H_
-#define INCLUDE_BASKET_CLOCK_GLOBAL_CLOCK_H_
+#ifndef INCLUDE_HCL_CLOCK_GLOBAL_CLOCK_H_
+#define INCLUDE_HCL_CLOCK_GLOBAL_CLOCK_H_
 
 #include <stdint-gcc.h>
 #include <mpi.h>
@@ -64,7 +64,7 @@ class global_clock {
 
     HTime LocalGetTime();
 
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
     THALLIUM_DEFINE1(LocalGetTime)
 #endif
 
@@ -72,4 +72,4 @@ class global_clock {
 
 }  // namespace hcl
 
-#endif  // INCLUDE_BASKET_CLOCK_GLOBAL_CLOCK_H_
+#endif  // INCLUDE_HCL_CLOCK_GLOBAL_CLOCK_H_

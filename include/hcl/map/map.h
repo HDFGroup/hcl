@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_MAP_MAP_H_
-#define INCLUDE_BASKET_MAP_MAP_H_
+#ifndef INCLUDE_HCL_MAP_MAP_H_
+#define INCLUDE_HCL_MAP_MAP_H_
 
 /**
  * Include Headers
@@ -32,13 +32,13 @@
 /** MPI Headers**/
 #include <mpi.h>
 /** RPC Lib Headers**/
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
 #include <rpc/server.h>
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #endif
 /** Thallium Headers **/
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 #include <thallium.hpp>
 #endif
 
@@ -102,7 +102,7 @@ class map {
     std::vector<std::pair<KeyType, MappedType>> LocalGetAllDataInServer();
     std::vector<std::pair<KeyType, MappedType>> LocalContainsInServer(KeyType &key_start,KeyType &key_end);
 
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
     THALLIUM_DEFINE(LocalPut, (key,data), KeyType &key, MappedType &data)
     THALLIUM_DEFINE(LocalGet, (key), KeyType &key)
     THALLIUM_DEFINE(LocalErase, (key), KeyType &key)
@@ -126,4 +126,4 @@ class map {
 
 }  // namespace hcl
 
-#endif  // INCLUDE_BASKET_MAP_MAP_H_
+#endif  // INCLUDE_HCL_MAP_MAP_H_

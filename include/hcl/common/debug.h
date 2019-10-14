@@ -29,8 +29,8 @@
  *-------------------------------------------------------------------------
  */
 
-#ifndef INCLUDE_BASKET_COMMON_DEBUG_H_
-#define INCLUDE_BASKET_COMMON_DEBUG_H_
+#ifndef INCLUDE_HCL_COMMON_DEBUG_H_
+#define INCLUDE_HCL_COMMON_DEBUG_H_
 
 #include <unistd.h>
 #include <execinfo.h>
@@ -59,7 +59,7 @@ inline void handler(int sig) {
  * various macros to print variables and messages.
  */
 
-#ifdef BASKET_DEBUG
+#ifdef HCL_DEBUG
 #define DBGVAR(var)                                             \
     std::cout << "DBG: " << __FILE__ << "(" << __LINE__ << ") " \
     << #var << " = [" << (var) << "]" << std::endl
@@ -125,25 +125,25 @@ using std::string;
 using namespace std;
 class AutoTrace
 {
-#if  defined(BASKET_TIMER)
+#if  defined(HCL_TIMER)
     Timer timer;
 #endif
     static int rank,item;
-#if defined(BASKET_TRACE) || defined(BASKET_TIMER)
+#if defined(HCL_TRACE) || defined(HCL_TIMER)
     string m_line;
 #endif
   public:
     template <typename... Args>
     AutoTrace(
-#if defined(BASKET_TRACE) || defined(BASKET_TIMER)
+#if defined(HCL_TRACE) || defined(HCL_TIMER)
             std::string string,
 #endif
             Args... args)
-#if defined(BASKET_TRACE) || defined(BASKET_TIMER)
+#if defined(HCL_TRACE) || defined(HCL_TIMER)
     :m_line(string)
 #endif
     {
-#if defined(BASKET_TRACE) || defined(BASKET_TIMER)
+#if defined(HCL_TRACE) || defined(HCL_TIMER)
         char thread_name[256];
         pthread_getname_np(pthread_self(), thread_name,256);
         std::stringstream stream;
@@ -152,10 +152,10 @@ class AutoTrace
         stream << "\033[31m";
         stream <<++item<<";"<<thread_name<<";"<< rank << ";" <<m_line << ";";
 #endif
-#if  defined(BASKET_TIMER)
+#if  defined(HCL_TIMER)
         stream <<";;";
 #endif
-#ifdef BASKET_TRACE
+#ifdef HCL_TRACE
         auto args_obj = std::make_tuple(args...);
         const ulong args_size = std::tuple_size<decltype(args_obj)>::value;
         stream << "args(";
@@ -166,33 +166,33 @@ class AutoTrace
         }
         stream << ");";
 #endif
-#if defined(BASKET_TRACE) || defined(BASKET_TIMER)
+#if defined(HCL_TRACE) || defined(HCL_TIMER)
         stream <<"start"<< endl;
         stream << "\033[00m";
         cout << stream.str();
 #endif
-#ifdef BASKET_TIMER
+#ifdef HCL_TIMER
         timer.resumeTime();
 #endif
     }
 
     ~AutoTrace()
     {
-#if defined(BASKET_TRACE) || defined(BASKET_TIMER)
+#if defined(HCL_TRACE) || defined(HCL_TIMER)
         std::stringstream stream;
         char thread_name[256];
         pthread_getname_np(pthread_self(), thread_name,256);
         stream << "\033[31m";
         stream <<item-- <<";"<<std::string(thread_name)<<";"<< rank << ";" << m_line << ";";
 #endif
-#if defined(BASKET_TRACE)
+#if defined(HCL_TRACE)
         stream  <<";";
 #endif
-#ifdef BASKET_TIMER
+#ifdef HCL_TIMER
         double end_time=timer.pauseTime();
         stream  <<end_time<<";msecs;";
 #endif
-#if defined(BASKET_TRACE) || defined(BASKET_TIMER)
+#if defined(HCL_TRACE) || defined(HCL_TIMER)
         stream  <<"finish"<< endl;
         stream << "\033[00m";
         cout << stream.str();
@@ -202,4 +202,4 @@ class AutoTrace
 
 
 
-#endif  // INCLUDE_BASKET_COMMON_DEBUG_H_
+#endif  // INCLUDE_HCL_COMMON_DEBUG_H_

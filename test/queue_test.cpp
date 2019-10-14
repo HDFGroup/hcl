@@ -35,7 +35,7 @@ struct KeyType{
     size_t a;
     KeyType():a(0){}
     KeyType(size_t a_):a(a_){}
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
     MSGPACK_DEFINE(a);
 #endif
     /* equal operator for comparing two Matrix. */
@@ -55,7 +55,7 @@ struct KeyType{
     bool Contains(const KeyType &o) const {
         return a==o.a;
     }
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
     template<typename A>
     void serialize(A& ar) const {
         ar & a;
@@ -135,11 +135,11 @@ int main (int argc,char* argv[])
     std::array<int,array_size> my_vals=std::array<int,array_size>();
 
     
-    BASKET_CONF->IS_SERVER = is_server;
-    BASKET_CONF->MY_SERVER = my_server;
-    BASKET_CONF->NUM_SERVERS = num_servers;
-    BASKET_CONF->SERVER_ON_NODE = server_on_node || is_server;
-    BASKET_CONF->SERVER_LIST_PATH = "./server_list";
+    HCL_CONF->IS_SERVER = is_server;
+    HCL_CONF->MY_SERVER = my_server;
+    HCL_CONF->NUM_SERVERS = num_servers;
+    HCL_CONF->SERVER_ON_NODE = server_on_node || is_server;
+    HCL_CONF->SERVER_LIST_PATH = "./server_list";
 
     hcl::queue<KeyType> *queue;
     if (is_server) {

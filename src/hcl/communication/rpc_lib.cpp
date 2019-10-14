@@ -21,21 +21,21 @@
 #include <hcl/communication/rpc_lib.h>
 
 RPC::~RPC() {
-    if (BASKET_CONF->IS_SERVER) {
-        switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+    if (HCL_CONF->IS_SERVER) {
+        switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
           // Twiddle thumbs
           break;
         }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
             case THALLIUM_TCP:
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
             case THALLIUM_ROCE:
 #endif
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
             {
                 // Mercury addresses in endpoints must be freed before finalizing Thallium
                 thallium_endpoints.clear();
@@ -48,44 +48,44 @@ RPC::~RPC() {
 }
 
 RPC::RPC() : server_list(),
-             server_port(BASKET_CONF->RPC_PORT) {
+             server_port(HCL_CONF->RPC_PORT) {
     AutoTrace trace = AutoTrace("RPC");
 
-    server_list = BASKET_CONF->LoadServers();
+    server_list = HCL_CONF->LoadServers();
 
     /* if current rank is a server */
-    if (BASKET_CONF->IS_SERVER) {
-        switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+    if (HCL_CONF->IS_SERVER) {
+        switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
         case RPCLIB: {
-            rpclib_server = std::make_shared<rpc::server>(server_port+BASKET_CONF->MY_SERVER);
+            rpclib_server = std::make_shared<rpc::server>(server_port+HCL_CONF->MY_SERVER);
             rpclib_server->suppress_exceptions(true);
 	break;
       }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
         case THALLIUM_TCP: {
-	engine_init_str = BASKET_CONF->TCP_CONF + "://" +
-	  BASKET_CONF->SERVER_LIST[BASKET_CONF->MY_SERVER] +
+	engine_init_str = HCL_CONF->TCP_CONF + "://" +
+	  HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER] +
 	  ":" +
-	  std::to_string(server_port + BASKET_CONF->MY_SERVER);
+	  std::to_string(server_port + HCL_CONF->MY_SERVER);
 	break;
       }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
       case THALLIUM_ROCE: {
-	  engine_init_str = BASKET_CONF->VERBS_CONF + "://" +
-	    BASKET_CONF->VERBS_DOMAIN + "://" +
-	    BASKET_CONF->SERVER_LIST[BASKET_CONF->MY_SERVER] +
+	  engine_init_str = HCL_CONF->VERBS_CONF + "://" +
+	    HCL_CONF->VERBS_DOMAIN + "://" +
+	    HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER] +
 	    ":" +
-	    std::to_string(server_port+BASKET_CONF->MY_SERVER);
+	    std::to_string(server_port+HCL_CONF->MY_SERVER);
 	  break;
 	}
 #endif
         }
     } else {
-        switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+        switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
                 for (std::vector<rpc::client>::size_type i = 0; i < server_list.size(); ++i) {
                     rpclib_clients.push_back(std::make_unique<rpc::client>(server_list[i].c_str(), server_port + i));
@@ -93,24 +93,24 @@ RPC::RPC() : server_list(),
                 break;
             }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
             case THALLIUM_TCP: {
-                init_engine_and_endpoints(BASKET_CONF->TCP_CONF);
+                init_engine_and_endpoints(HCL_CONF->TCP_CONF);
                 break;
             }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
             case THALLIUM_ROCE: {
-                init_engine_and_endpoints(BASKET_CONF->VERBS_CONF);
+                init_engine_and_endpoints(HCL_CONF->VERBS_CONF);
                 break;
             }
 #endif
         }
     }
-    run(BASKET_CONF->RPC_THREADS);
+    run(HCL_CONF->RPC_THREADS);
 }
 
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 void RPC::init_engine_and_endpoints(CharStruct protocol) {
     thallium_engine = hcl::Singleton<tl::engine>::GetInstance(protocol.c_str(), MARGO_CLIENT_MODE);
 
@@ -131,23 +131,23 @@ void RPC::init_engine_and_endpoints(CharStruct protocol) {
 
 void RPC::run(size_t workers) {
     AutoTrace trace = AutoTrace("RPC::run", workers);
-    if (BASKET_CONF->IS_SERVER){
-        switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+    if (HCL_CONF->IS_SERVER){
+        switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
                     rpclib_server->async_run(workers);
                 break;
             }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
             case THALLIUM_TCP:
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
             case THALLIUM_ROCE:
 #endif
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
                 {
-		  thallium_engine = hcl::Singleton<tl::engine>::GetInstance(engine_init_str.c_str(), THALLIUM_SERVER_MODE,true,BASKET_CONF->RPC_THREADS);
+		  thallium_engine = hcl::Singleton<tl::engine>::GetInstance(engine_init_str.c_str(), THALLIUM_SERVER_MODE,true,HCL_CONF->RPC_THREADS);
                     break;
                 }
 #endif

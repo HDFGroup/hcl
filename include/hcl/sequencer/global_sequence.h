@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_SEQUENCER_GLOBAL_SEQUENCE_H_
-#define INCLUDE_BASKET_SEQUENCER_GLOBAL_SEQUENCE_H_
+#ifndef INCLUDE_HCL_SEQUENCER_GLOBAL_SEQUENCE_H_
+#define INCLUDE_HCL_SEQUENCER_GLOBAL_SEQUENCE_H_
 
 #include <hcl/communication/rpc_lib.h>
 #include <hcl/communication/rpc_factory.h>
@@ -61,7 +61,7 @@ class global_sequence {
 
     uint64_t LocalGetNextSequence();
 
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
     THALLIUM_DEFINE1(LocalGetNextSequence)
 #endif
 
@@ -69,4 +69,4 @@ class global_sequence {
 
 }  // namespace hcl
 
-#endif  // INCLUDE_BASKET_SEQUENCER_GLOBAL_SEQUENCE_H_
+#endif  // INCLUDE_HCL_SEQUENCER_GLOBAL_SEQUENCE_H_

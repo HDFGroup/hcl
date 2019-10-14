@@ -18,25 +18,25 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_COMMUNICATION_RPC_LIB_CPP_
-#define INCLUDE_BASKET_COMMUNICATION_RPC_LIB_CPP_
+#ifndef INCLUDE_HCL_COMMUNICATION_RPC_LIB_CPP_
+#define INCLUDE_HCL_COMMUNICATION_RPC_LIB_CPP_
 
 template <typename F>
 void RPC::bind(CharStruct str, F func) {
-    switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+    switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
         case RPCLIB: {
             rpclib_server->bind(str.c_str(), func);
             break;
         }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
         case THALLIUM_TCP:
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
         case THALLIUM_ROCE:
 #endif
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
             {
 	      thallium_engine->define(str.string(), func);
                 break;
@@ -49,8 +49,8 @@ Response RPC::callWithTimeout(uint16_t server_index, int timeout_ms, CharStruct 
     AutoTrace trace = AutoTrace("RPC::call", server_index, func_name);
     int16_t port = server_port + server_index;
 
-    switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+    switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
         case RPCLIB: {
             auto *client = rpclib_clients[server_index].get();
             client->set_timeout(timeout_ms);
@@ -60,11 +60,11 @@ Response RPC::callWithTimeout(uint16_t server_index, int timeout_ms, CharStruct 
             break;
         }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
         case THALLIUM_TCP: {
             std::shared_ptr<tl::engine> thallium_client;
-            if (BASKET_CONF->IS_SERVER) {
-                thallium_client = std::make_shared<tl::engine>(BASKET_CONF->TCP_CONF.c_str(), MARGO_CLIENT_MODE);
+            if (HCL_CONF->IS_SERVER) {
+                thallium_client = std::make_shared<tl::engine>(HCL_CONF->TCP_CONF.c_str(), MARGO_CLIENT_MODE);
             }
             else {
                 thallium_client = thallium_engine;
@@ -78,11 +78,11 @@ Response RPC::callWithTimeout(uint16_t server_index, int timeout_ms, CharStruct 
             break;
         }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
         case THALLIUM_ROCE: {
             std::shared_ptr<tl::engine> thallium_client;
-            if (BASKET_CONF->IS_SERVER) {
-                thallium_client = std::make_shared<tl::engine>(BASKET_CONF->VERBS_CONF.c_str(), MARGO_CLIENT_MODE);
+            if (HCL_CONF->IS_SERVER) {
+                thallium_client = std::make_shared<tl::engine>(HCL_CONF->VERBS_CONF.c_str(), MARGO_CLIENT_MODE);
             }
             else {
                 thallium_client = thallium_engine;
@@ -107,8 +107,8 @@ Response RPC::call(uint16_t server_index,
     AutoTrace trace = AutoTrace("RPC::call", server_index, func_name);
     int16_t port = server_port + server_index;
 
-    switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+    switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
         case RPCLIB: {
             auto *client = rpclib_clients[server_index].get();
             /*client.set_timeout(5000);*/
@@ -116,11 +116,11 @@ Response RPC::call(uint16_t server_index,
             break;
         }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
         case THALLIUM_TCP: {
             std::shared_ptr<tl::engine> thallium_client;
-            if (BASKET_CONF->IS_SERVER) {
-                thallium_client = std::make_shared<tl::engine>(BASKET_CONF->TCP_CONF.c_str(), MARGO_CLIENT_MODE);
+            if (HCL_CONF->IS_SERVER) {
+                thallium_client = std::make_shared<tl::engine>(HCL_CONF->TCP_CONF.c_str(), MARGO_CLIENT_MODE);
             }
             else {
                 thallium_client = thallium_engine;
@@ -134,11 +134,11 @@ Response RPC::call(uint16_t server_index,
             break;
         }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
         case THALLIUM_ROCE: {
             std::shared_ptr<tl::engine> thallium_client;
-            if (BASKET_CONF->IS_SERVER) {
-                thallium_client = std::make_shared<tl::engine>(BASKET_CONF->VERBS_CONF.c_str(), MARGO_CLIENT_MODE);
+            if (HCL_CONF->IS_SERVER) {
+                thallium_client = std::make_shared<tl::engine>(HCL_CONF->VERBS_CONF.c_str(), MARGO_CLIENT_MODE);
             }
             else {
                 thallium_client = thallium_engine;
@@ -166,8 +166,8 @@ std::future<Response> RPC::async_call(uint16_t server_index,
     AutoTrace trace = AutoTrace("RPC::call", server_index, func_name);
     int16_t port = server_port + server_index;
 
-    switch (BASKET_CONF->RPC_IMPLEMENTATION) {
-#ifdef BASKET_ENABLE_RPCLIB
+    switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
         case RPCLIB: {
             auto *client = rpclib_clients[server_index].get();
             // client.set_timeout(5000);
@@ -175,13 +175,13 @@ std::future<Response> RPC::async_call(uint16_t server_index,
             break;
         }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_TCP
+#ifdef HCL_ENABLE_THALLIUM_TCP
         case THALLIUM_TCP: {
             //TODO:NotImplemented error
             break;
         }
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
         case THALLIUM_ROCE: {
              //TODO:NotImplemented error
             break;
@@ -191,7 +191,7 @@ std::future<Response> RPC::async_call(uint16_t server_index,
 }
 
 
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
 // These are still experimental for using RDMA bulk transfers
 template<typename MappedType>
 MappedType RPC::prep_rdma_server(tl::endpoint endpoint, tl::bulk &bulk_handle) {
@@ -216,4 +216,4 @@ tl::bulk RPC::prep_rdma_client(MappedType &data) {
 }
 #endif
 
-#endif  // INCLUDE_BASKET_COMMUNICATION_RPC_LIB_CPP_
+#endif  // INCLUDE_HCL_COMMUNICATION_RPC_LIB_CPP_

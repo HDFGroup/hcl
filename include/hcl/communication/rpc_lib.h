@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_COMMUNICATION_RPC_LIB_H_
-#define INCLUDE_BASKET_COMMUNICATION_RPC_LIB_H_
+#ifndef INCLUDE_HCL_COMMUNICATION_RPC_LIB_H_
+#define INCLUDE_HCL_COMMUNICATION_RPC_LIB_H_
 
 #include <hcl/common/constants.h>
 #include <hcl/common/data_structures.h>
@@ -30,13 +30,13 @@
 #include <mpi.h>
 
 /** RPC Lib Headers**/
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
 #include <rpc/server.h>
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #endif
 /** Thallium Headers **/
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 #include <thallium.hpp>
 #include <thallium/serialization/serialize.hpp>
 #include <thallium/serialization/buffer_input_archive.hpp>
@@ -79,12 +79,12 @@
 #include <iostream>
 #include <future>
 
-#if !defined(BASKET_ENABLE_RPCLIB) && !defined(BASKET_ENABLE_THALLIUM_TCP) && !defined(BASKET_ENABLE_THALLIUM_ROCE)
-#error "Please define an RPC backend (e.g., -DBASKET_ENABLE_RPCLIB)"
+#if !defined(HCL_ENABLE_RPCLIB) && !defined(HCL_ENABLE_THALLIUM_TCP) && !defined(HCL_ENABLE_THALLIUM_ROCE)
+#error "Please define an RPC backend (e.g., -DHCL_ENABLE_RPCLIB)"
 #endif
 
 namespace bip = boost::interprocess;
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 namespace tl = thallium;
 #endif
 
@@ -92,13 +92,13 @@ class RPC {
 private:
     uint16_t server_port;
     std::string name;
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
     std::shared_ptr<rpc::server> rpclib_server;
     // We can't use a std::vector<rpc::client> for these since rpc::client is neither copy
     // nor move constructible. See https://github.com/rpclib/rpclib/issues/128
     std::vector<std::unique_ptr<rpc::client>> rpclib_clients;
 #endif
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
     std::shared_ptr<tl::engine> thallium_engine;
     CharStruct engine_init_str;
     std::vector<tl::endpoint> thallium_endpoints;
@@ -123,7 +123,7 @@ private:
 
     void run(size_t workers = RPC_THREADS);
 
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
     template<typename MappedType>
     MappedType prep_rdma_server(tl::endpoint endpoint, tl::bulk &bulk_handle);
 
@@ -151,4 +151,4 @@ private:
 
 #include "rpc_lib.cpp"
 
-#endif  // INCLUDE_BASKET_COMMUNICATION_RPC_LIB_H_
+#endif  // INCLUDE_HCL_COMMUNICATION_RPC_LIB_H_

@@ -22,8 +22,8 @@
 // Created by hariharan on 3/19/19.
 //
 
-#ifndef INCLUDE_BASKET_COMMON_CONFIGURATION_MANAGER_H
-#define INCLUDE_BASKET_COMMON_CONFIGURATION_MANAGER_H
+#ifndef INCLUDE_HCL_COMMON_CONFIGURATION_MANAGER_H
+#define INCLUDE_HCL_COMMON_CONFIGURATION_MANAGER_H
 
 #include <hcl/common/debug.h>
 #include <hcl/common/enumerations.h>
@@ -61,11 +61,11 @@ namespace hcl{
               BACKED_FILE_DIR("/dev/shm"),
               MEMORY_ALLOCATED(1024ULL * 1024ULL * 128ULL),
               RPC_PORT(8080), RPC_THREADS(1),
-#if defined(BASKET_ENABLE_RPCLIB)
+#if defined(HCL_ENABLE_RPCLIB)
               RPC_IMPLEMENTATION(RPCLIB),
-#elif defined(BASKET_ENABLE_THALLIUM_TCP)
+#elif defined(HCL_ENABLE_THALLIUM_TCP)
         RPC_IMPLEMENTATION(THALLIUM_TCP),
-#elif defined(BASKET_ENABLE_THALLIUM_ROCE)
+#elif defined(HCL_ENABLE_THALLIUM_ROCE)
         RPC_IMPLEMENTATION(THALLIUM_ROCE),
 #endif
               TCP_CONF("ofi+tcp"), VERBS_CONF("verbs"), VERBS_DOMAIN("mlx5_0"),
@@ -126,4 +126,4 @@ namespace hcl{
 
 }
 
-#endif //INCLUDE_BASKET_COMMON_CONFIGURATION_MANAGER_H
+#endif //INCLUDE_HCL_COMMON_CONFIGURATION_MANAGER_H

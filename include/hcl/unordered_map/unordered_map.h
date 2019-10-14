@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_UNORDERED_MAP_UNORDERED_MAP_H_
-#define INCLUDE_BASKET_UNORDERED_MAP_UNORDERED_MAP_H_
+#ifndef INCLUDE_HCL_UNORDERED_MAP_UNORDERED_MAP_H_
+#define INCLUDE_HCL_UNORDERED_MAP_UNORDERED_MAP_H_
 
 /**
  * Include Headers
@@ -44,13 +44,13 @@
 /** MPI Headers**/
 #include <mpi.h>
 /** RPC Lib Headers**/
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
 #include <rpc/server.h>
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #endif
 /** Thallium Headers **/
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 #include <thallium.hpp>
 #endif
 /** Boost Headers **/
@@ -126,7 +126,7 @@ class unordered_map {
     std::pair<bool, MappedType> LocalErase(KeyType &key);
     std::vector<std::pair<KeyType, MappedType>> LocalGetAllDataInServer();
 
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
     THALLIUM_DEFINE(LocalPut, (key,data) ,KeyType &key, MappedType &data)
 
     // void ThalliumLocalPut(const tl::request &thallium_req, tl::bulk &bulk_handle, KeyType key) {
@@ -261,4 +261,4 @@ class unordered_map {
 
 }  // namespace hcl
 
-#endif  // INCLUDE_BASKET_UNORDERED_MAP_UNORDERED_MAP_H_
+#endif  // INCLUDE_HCL_UNORDERED_MAP_UNORDERED_MAP_H_

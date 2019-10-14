@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_COMMON_CONSTANTS_H_
-#define INCLUDE_BASKET_COMMON_CONSTANTS_H_
+#ifndef INCLUDE_HCL_COMMON_CONSTANTS_H_
+#define INCLUDE_HCL_COMMON_CONSTANTS_H_
 #include <stdint.h>
 #include <hcl/common/data_structures.h>
 
@@ -28,4 +28,4 @@ const uint16_t RPC_THREADS = 1;
 const int TEST_REQUEST_SIZE = 1000;
 const CharStruct PATH_SEPARATOR = "/";
 
-#endif  // INCLUDE_BASKET_COMMON_CONSTANTS_H_
+#endif  // INCLUDE_HCL_COMMON_CONSTANTS_H_

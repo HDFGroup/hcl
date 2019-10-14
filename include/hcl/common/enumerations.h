@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BASKET_COMMON_ENUMERATIONS_H
-#define INCLUDE_BASKET_COMMON_ENUMERATIONS_H
+#ifndef INCLUDE_HCL_COMMON_ENUMERATIONS_H
+#define INCLUDE_HCL_COMMON_ENUMERATIONS_H
 
 typedef enum RPCImplementation {
   RPCLIB = 0,
@@ -27,4 +27,4 @@ typedef enum RPCImplementation {
   THALLIUM_ROCE = 2
 } RPCImplementation;
 
-#endif //INCLUDE_BASKET_COMMON_ENUMERATIONS_H
+#endif //INCLUDE_HCL_COMMON_ENUMERATIONS_H

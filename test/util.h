@@ -2,8 +2,8 @@
 // Created by manih on 7/7/2019.
 //
 
-#ifndef BASKET_UTIL_H
-#define BASKET_UTIL_H
+#ifndef HCL_UTIL_H
+#define HCL_UTIL_H
 
 #include <boost/interprocess/containers/string.hpp>
 #include <stdlib.h>
@@ -181,4 +181,4 @@ void SetSignal(){
     sigaction(SIGUSR1, &sa, NULL);
     sigaction(SIGABRT, &sa, NULL);
 }
-#endif //BASKET_UTIL_H
+#endif //HCL_UTIL_H

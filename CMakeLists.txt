@@ -8,18 +8,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-2 -g3")
 option(HCL_ENABLE_RPCLIB "allow hcl to use RPCLIB" ON)
 option(HCL_ENABLE_THALLIUM_TCP "allow hcl to use RPCLIB" OFF)
 option(HCL_ENABLE_THALLIUM_ROCE "allow hcl to use RPCLIB" OFF)
-option(BASKET_TIMER "Show timing information of library calls." OFF)
-option(BASKET_TRACE "Show traces of library calls." OFF)
+option(HCL_TIMER "Show timing information of library calls." OFF)
+option(HCL_TRACE "Show traces of library calls." OFF)
 
-if(BASKET_ENABLE_RPCLIB)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBASKET_ENABLE_RPCLIB")
-    message("BASKET_ENABLE_RPCLIB: ${BASKET_ENABLE_RPCLIB}")
-elseif(BASKET_ENABLE_THALLIUM_TCP)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBASKET_ENABLE_THALLIUM_TCP")
-    message("BASKET_ENABLE_THALLIUM_TCP: ${BASKET_ENABLE_THALLIUM_TCP}")
-elseif(BASKET_ENABLE_THALLIUM_ROCE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBASKET_ENABLE_THALLIUM_ROCE")
-    message("BASKET_ENABLE_THALLIUM_ROCE: ${BASKET_ENABLE_THALLIUM_ROCE}")
+if(HCL_ENABLE_RPCLIB)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHCL_ENABLE_RPCLIB")
+    message("HCL_ENABLE_RPCLIB: ${HCL_ENABLE_RPCLIB}")
+elseif(HCL_ENABLE_THALLIUM_TCP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHCL_ENABLE_THALLIUM_TCP")
+    message("HCL_ENABLE_THALLIUM_TCP: ${HCL_ENABLE_THALLIUM_TCP}")
+elseif(HCL_ENABLE_THALLIUM_ROCE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHCL_ENABLE_THALLIUM_ROCE")
+    message("HCL_ENABLE_THALLIUM_ROCE: ${HCL_ENABLE_THALLIUM_ROCE}")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -52,7 +52,7 @@ set(HCL_SRC  include/hcl/common/singleton.h
                 src/hcl/sequencer/global_sequence.cpp
                 include/hcl/communication/rpc_factory.h)
 
-add_library(${PROJECT_NAME} SHARED ${BASKET_SRC})
+add_library(${PROJECT_NAME} SHARED ${HCL_SRC})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -60,22 +60,22 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     PUBLIC_HEADER include/hcl.h)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if(BASKET_TIMER)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE BASKET_TIMER)
+if(HCL_TIMER)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE HCL_TIMER)
 endif()
 
-if(BASKET_TRACE)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE BASKET_TRACE)
+if(HCL_TRACE)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE HCL_TRACE)
 endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
 configure_file(hcl.pc.in hcl.pc @ONLY)
 
-if(BASKET_ENABLE_RPCLIB)
+if(HCL_ENABLE_RPCLIB)
     set(RPC_LIB_FLAGS -lrpc ${RPC_LIB_FLAGS})
 endif()
-if(BASKET_ENABLE_THALLIUM_ROCE OR BASKET_ENABLE_THALLIUM_TCP)
+if(HCL_ENABLE_THALLIUM_ROCE OR HCL_ENABLE_THALLIUM_TCP)
     set(RPC_LIB_FLAGS -lthallium -lmercury -lmercury_util -lmargo -labt ${RPC_LIB_FLAGS})
 endif()
 

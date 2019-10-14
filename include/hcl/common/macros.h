@@ -17,19 +17,19 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-#ifndef INCLUDE_BASKET_COMMON_MACROS_H_
-#define INCLUDE_BASKET_COMMON_MACROS_H_
+#ifndef INCLUDE_HCL_COMMON_MACROS_H_
+#define INCLUDE_HCL_COMMON_MACROS_H_
 
 #include <hcl/common/configuration_manager.h>
 #include <hcl/common/singleton.h>
 # define EXPAND_ARGS(...) __VA_ARGS__
-#define BASKET_CONF hcl::Singleton<hcl::ConfigurationManager>::GetInstance()
+#define HCL_CONF hcl::Singleton<hcl::ConfigurationManager>::GetInstance()
 
 #define THALLIUM_DEFINE(name, args,args_t...) void Thallium##name(const tl::request &thallium_req, args_t) { thallium_req.respond(name args ); }
 
 #define THALLIUM_DEFINE1(name) void Thallium##name(const tl::request &thallium_req) { thallium_req.respond(name()); }
 
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
 #define RPC_CALL_WRAPPER_RPCLIB1(funcname, serverVar,ret) \
  case RPCLIB: {								\
     return rpc->call<RPCLIB_MSGPACK::object_handle>( serverVar , func_prefix + std::string(funcname) ).template as< ret >(); \
@@ -44,7 +44,7 @@
 #define RPC_CALL_WRAPPER_RPCLIB1(funcname, serverVar,ret)
 #define RPC_CALL_WRAPPER_RPCLIB(funcname, serverVar,ret,args...) 
 #endif
-#ifdef BASKET_ENABLE_RPCLIB
+#ifdef HCL_ENABLE_RPCLIB
 #define RPC_CALL_WRAPPER_RPCLIB1_CB(funcname, serverVar,ret) \
  case RPCLIB: {								\
     return rpc->call<RPCLIB_MSGPACK::object_handle>( serverVar , funcname , std::forward< CB_Args >( cb_args )...).template as< ret >();\
@@ -60,17 +60,17 @@
 #define RPC_CALL_WRAPPER_RPCLIB_CB(funcname, serverVar,ret,args...)
 #endif
 
-#ifdef  BASKET_ENABLE_THALLIUM_TCP
+#ifdef  HCL_ENABLE_THALLIUM_TCP
 #define RPC_CALL_WRAPPER_THALLIUM_TCP() case THALLIUM_TCP:
 #else
 #define RPC_CALL_WRAPPER_THALLIUM_TCP() 
 #endif
-#ifdef BASKET_ENABLE_THALLIUM_ROCE
+#ifdef HCL_ENABLE_THALLIUM_ROCE
 #define RPC_CALL_WRAPPER_THALLIUM_ROCE() case THALLIUM_ROCE:
 #else
 #define RPC_CALL_WRAPPER_THALLIUM_ROCE() 
 #endif
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 #define RPC_CALL_WRAPPER_THALLIUM1(funcname, serverVar,ret)\
 {\
  return rpc->call<tl::packed_response>( serverVar , func_prefix + funcname ).template as< ret >(); \
@@ -88,7 +88,7 @@
 
 
 #define RPC_CALL_WRAPPER1(funcname, serverVar,ret) [& ]()-> ret { \
-switch (BASKET_CONF->RPC_IMPLEMENTATION) {\
+switch (HCL_CONF->RPC_IMPLEMENTATION) {\
 RPC_CALL_WRAPPER_RPCLIB1(funcname, serverVar,ret) \
 RPC_CALL_WRAPPER_THALLIUM_TCP()\
 RPC_CALL_WRAPPER_THALLIUM_ROCE()\
@@ -96,7 +96,7 @@ RPC_CALL_WRAPPER_THALLIUM1(funcname, serverVar,ret)\
  }\
 }();
 #define RPC_CALL_WRAPPER(funcname, serverVar,ret, args...) [& ]()-> ret { \
-switch (BASKET_CONF->RPC_IMPLEMENTATION) {\
+switch (HCL_CONF->RPC_IMPLEMENTATION) {\
   RPC_CALL_WRAPPER_RPCLIB(funcname, serverVar,ret,args)	\
 RPC_CALL_WRAPPER_THALLIUM_TCP()\
 RPC_CALL_WRAPPER_THALLIUM_ROCE()\
@@ -104,7 +104,7 @@ RPC_CALL_WRAPPER_THALLIUM_ROCE()\
 }\
   }();
 #define RPC_CALL_WRAPPER1_CB(funcname, serverVar,ret) [&]()-> ret { \
-switch (BASKET_CONF->RPC_IMPLEMENTATION) {\
+switch (HCL_CONF->RPC_IMPLEMENTATION) {\
 RPC_CALL_WRAPPER_RPCLIB1(funcname, serverVar,ret) \
 RPC_CALL_WRAPPER_THALLIUM_TCP()\
 RPC_CALL_WRAPPER_THALLIUM_ROCE()\
@@ -113,7 +113,7 @@ RPC_CALL_WRAPPER_THALLIUM1(funcname, serverVar,ret)\
 }();
 
 #define RPC_CALL_WRAPPER_CB(funcname, serverVar,ret, ...) [&]()-> ret { \
-switch (BASKET_CONF->RPC_IMPLEMENTATION) {\
+switch (HCL_CONF->RPC_IMPLEMENTATION) {\
   RPC_CALL_WRAPPER_RPCLIB_CB(funcname, serverVar,ret, __VA_ARGS__)	\
 RPC_CALL_WRAPPER_THALLIUM_TCP()\
 RPC_CALL_WRAPPER_THALLIUM_ROCE()\
@@ -121,4 +121,4 @@ RPC_CALL_WRAPPER_THALLIUM_ROCE()\
 }\
   }();
 
-#endif  // INCLUDE_BASKET_COMMON_MACROS_H_
+#endif  // INCLUDE_HCL_COMMON_MACROS_H_
