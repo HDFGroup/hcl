@@ -3,6 +3,8 @@ dist: bionic
 sudo: required
 
 env:
+  # Turn off all RPC layers by default. They will be enabled one-by-one in the
+  # build matrix
   global:
     - HCL_ENABLE_RPCLIB=OFF
     - HCL_ENABLE_THALLIUM_TCP=OFF
@@ -31,8 +33,4 @@ matrix:
   - env: HCL_ENABLE_THALLIUM_ROCE=ON
     before_install: *thallium_deps
 
-# Build HCL
-script:
-  echo "rpclib: ${HCL_ENABLE_RPCLIB}"
-  echo "tcp: ${HCL_ENABLE_THALLIUM_TCP}"
-  echo "roce: ${HCL_ENABLE_THALLIUM_ROCE}"
+script: ./ci/install_hcl.sh
