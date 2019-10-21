@@ -2,6 +2,12 @@ language: cpp
 dist: bionic
 sudo: required
 
+env:
+  global:
+    - HCL_ENABLE_RPCLIB=OFF
+    - HCL_ENABLE_THALLIUM_TCP=OFF
+    - HCL_ENABLE_THALLIUM_ROCE=OFF
+
 # Install APT dependencies
 addons:
   apt:
@@ -9,14 +15,24 @@ addons:
       - libboost-dev
       - libmpich-dev
 
-# Build and install dependencies
-before_install:
+thallium_deps: &thallium_deps
   - ./ci/install_libfabric.sh
   - ./ci/install_mercury.sh
   - ./ci/install_argobots.sh
   - ./ci/install_margo.sh
   - ./ci/install_thallium.sh
 
+matrix:
+  include:
+  - env: HCL_ENABLE_RPCLIB=ON
+    before_install: ./ci/install_rpclib.sh
+  - env: HCL_ENABLE_THALLIUM_TCP=ON
+    before_install: *thallium_deps
+  - env: HCL_ENABLE_THALLIUM_ROCE=ON
+    before_install: *thallium_deps
+
 # Build HCL
 script:
-  echo "Placeholder"
+  echo "rpclib: ${HCL_ENABLE_RPCLIB}"
+  echo "tcp: ${HCL_ENABLE_THALLIUM_TCP}"
+  echo "roce: ${HCL_ENABLE_THALLIUM_ROCE}"
