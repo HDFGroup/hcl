@@ -8,7 +8,8 @@ THALLIUM_ARCHIVE=${THALLIUM_DIR}.tar.gz
 wget https://xgitlab.cels.anl.gov/sds/thallium/-/archive/v${THALLIUM_VERSION}/${THALLIUM_ARCHIVE}
 tar xf ${THALLIUM_ARCHIVE}
 pushd ${THALLIUM_DIR}
-
+mkdir build
+pushd build
 CXXFLAGS="-I${LOCAL}/include"                \
 LDFLAGS="-L${LOCAL}/lib"                     \
     cmake                                    \
@@ -23,3 +24,6 @@ LDFLAGS="-L${LOCAL}/lib"                     \
         ..
 
 cmake --build . -- -j 2 && make install
+
+popd
+popd
