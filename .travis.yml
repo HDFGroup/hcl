@@ -1,0 +1,6 @@
+language: cpp
+dist: bionic
+sudo: required
+
+script:
+  echo "Placeholder"
