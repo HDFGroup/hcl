@@ -1,5 +1,6 @@
 #!/bin/bash
 
+LOCAL=${HOME}/local
 mkdir build
 pushd build
 
