@@ -2,5 +2,18 @@ language: cpp
 dist: bionic
 sudo: required
 
+# Install APT dependencies
+addons:
+  apt:
+    packages:
+      - libmpich-dev
+
+# Build and install dependencies
+before_install:
+  - ./ci/install_mercury.sh
+  - ./ci/install_margo.sh
+  - ./ci/install_thallium.sh
+
+# Build HCL
 script:
   echo "Placeholder"
