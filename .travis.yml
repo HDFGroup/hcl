@@ -13,6 +13,7 @@ addons:
 before_install:
   - ./ci/install_libfabric.sh
   - ./ci/install_mercury.sh
+  - ./ci/install_argobots.sh
   - ./ci/install_margo.sh
   - ./ci/install_thallium.sh
 
