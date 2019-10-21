@@ -6,10 +6,13 @@ sudo: required
 addons:
   apt:
     packages:
+      - wget
+      - libboost-dev
       - libmpich-dev
 
 # Build and install dependencies
 before_install:
+  - ./ci/install_libfabric.sh
   - ./ci/install_mercury.sh
   - ./ci/install_margo.sh
   - ./ci/install_thallium.sh
