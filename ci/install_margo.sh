@@ -8,7 +8,7 @@ MARGO_ARCHIVE=${MARGO_DIR}.tar.gz
 wget https://xgitlab.cels.anl.gov/sds/margo/-/archive/v${MARGO_VERSION}/${MARGO_ARCHIVE}
 tar xf ${MARGO_ARCHIVE}
 pushd ${MARGO_DIR}
-sh autogen.sh
+sh prepare.sh
 
 CFLAGS="-I${LOCAL}/include"                    \
 LDFLAGS="-L${LOCAL}/lib"                       \
