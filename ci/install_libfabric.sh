@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "Installing libfabric"
-
 LIBFABRIC_VERSION=1.8.1
 LIBFABRIC_DIR=libfabric-${LIBFABRIC_VERSION}
 LIBFABRIC_ARCHIVE=${LIBFABRIC_DIR}.tar.bz2

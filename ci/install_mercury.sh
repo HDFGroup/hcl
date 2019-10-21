@@ -1,13 +1,10 @@
 #!/bin/bash
 
-echo "Installing Mercury"
-
 LOCAL=${HOME}/local
 MERCURY_VERSION=1.0.1
 MERCURY_DIR=mercury-${MERCURY_VERSION}
 MERCURY_ARCHIVE=${MERCURY_DIR}.tar.bz2
 
-wget https://github.com/ofiwg/libfabric/releases/download/v${MERCURY_VERSION}/${MERCURY_ARCHIVE}
 wget https://github.com/mercury-hpc/mercury/releases/download/v${MERCURY_VERSION}/${MERCURY_ARCHIVE}
 tar xf ${MERCURY_ARCHIVE}
 pushd ${MERCURY_DIR}

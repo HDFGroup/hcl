@@ -6,7 +6,6 @@ sudo: required
 addons:
   apt:
     packages:
-      - wget
       - libboost-dev
       - libmpich-dev
 
