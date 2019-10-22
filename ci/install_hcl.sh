@@ -4,7 +4,7 @@ LOCAL=${HOME}/local
 mkdir build
 pushd build
 
-CXXFLAGS="-I${LOCAL}/include"                                  \
+CXXFLAGS="-I${LOCAL}/include -fsanitize=address -O1 -fno-omi-frame-pointer -g" \
 LDFLAGS="-L${LOCAL}/lib"                                       \
     cmake                                                      \
         -DCMAKE_INSTALL_PREFIX=${LOCAL}                        \
