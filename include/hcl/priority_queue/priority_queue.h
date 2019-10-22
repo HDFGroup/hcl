@@ -47,6 +47,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/algorithm/string.hpp>
 /** Standard C++ Headers**/
+#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -94,7 +95,8 @@ class priority_queue {
   public:
     ~priority_queue();
 
-    explicit priority_queue(std::string name_ = "TEST_PRIORITY_QUEUE");
+    explicit priority_queue(std::string name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
+                            "_TEST_PRIORITY_QUEUE");
 
     bool LocalPush(MappedType &data);
     std::pair<bool, MappedType> LocalPop();

@@ -2,7 +2,7 @@
  * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
  *
  * This file is part of HCL
- * 
+ *
  * HCL is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -48,6 +48,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/algorithm/string.hpp>
 /** Standard C++ Headers**/
+#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -92,7 +93,7 @@ class map {
   public:
     ~map();
 
-    explicit map(std::string name_ = "TEST_MAP");
+    explicit map(std::string name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") + "_TEST_MAP");
 
     bool LocalPut(KeyType &key, MappedType &data);
     std::pair<bool, MappedType> LocalGet(KeyType &key);
@@ -107,7 +108,7 @@ class map {
     THALLIUM_DEFINE(LocalContainsInServer, (key_start, key_end), KeyType &key_start, KeyType &key_end)
     THALLIUM_DEFINE1(LocalGetAllDataInServer)
 #endif
-    
+
     bool Put(KeyType &key, MappedType &data);
     std::pair<bool, MappedType> Get(KeyType &key);
 

@@ -26,6 +26,7 @@
  */
 
 /** Standard C++ Headers**/
+#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -98,7 +99,8 @@ class unordered_map {
   public:
     ~unordered_map();
 
-    explicit unordered_map(CharStruct name_ = std::string("TEST_UNORDERED_MAP"));
+    explicit unordered_map(CharStruct name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
+                           "_TEST_UNORDERED_MAP");
 
    /* template <typename F>
     void Bind(std::string rpc_name, F fun);*/

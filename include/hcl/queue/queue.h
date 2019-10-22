@@ -47,6 +47,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/algorithm/string.hpp>
 /** Standard C++ Headers**/
+#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -90,7 +91,7 @@ class queue {
   public:
     ~queue();
 
-    explicit queue(std::string name_ = "TEST_QUEUE");
+    explicit queue(std::string name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") + "_TEST_QUEUE");
 
     bool LocalPush(MappedType &data);
     std::pair<bool, MappedType> LocalPop();

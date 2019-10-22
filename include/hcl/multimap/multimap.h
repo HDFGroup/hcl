@@ -47,6 +47,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/algorithm/string.hpp>
 /** Standard C++ Headers**/
+#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -90,7 +91,8 @@ class multimap {
     /* Constructor to deallocate the shared memory*/
     ~multimap();
 
-    explicit multimap(std::string name_ = "TEST_MULTIMAP");
+    explicit multimap(std::string name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
+                      "_TEST_MULTIMAP");
 
     bool LocalPut(KeyType &key, MappedType &data);
     std::pair<bool, MappedType> LocalGet(KeyType &key);

@@ -48,6 +48,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/algorithm/string.hpp>
 /** Standard C++ Headers**/
+#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -91,7 +92,7 @@ class set {
   public:
     ~set();
 
-    explicit set(CharStruct name_ = std::string("TEST_SET"));
+    explicit set(CharStruct name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") + "_TEST_SET");
 
     bool LocalPut(KeyType &key);
     bool LocalGet(KeyType &key);
