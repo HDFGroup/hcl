@@ -32,9 +32,7 @@ unordered_map<KeyType, MappedType>::~unordered_map() {
 
 template<typename KeyType, typename MappedType>
 unordered_map<KeyType, MappedType>::unordered_map(CharStruct name_)
-    : comm_size(1),
-      my_rank(0),
-      num_servers(HCL_CONF->NUM_SERVERS),
+    : num_servers(HCL_CONF->NUM_SERVERS),
       my_server(HCL_CONF->MY_SERVER),
       memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
       is_server(HCL_CONF->IS_SERVER),
@@ -48,9 +46,6 @@ unordered_map<KeyType, MappedType>::unordered_map(CharStruct name_)
     // init my_server, num_servers, server_on_node, processor_name from RPC
     AutoTrace trace = AutoTrace("hcl::unordered_map");
 
-    /* Initialize MPI rank and size of world */
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     /* create per server name for shared memory. Needed if multiple servers are
        spawned on one node*/
     this->name = this->name + std::string("_") + std::to_string(my_server);

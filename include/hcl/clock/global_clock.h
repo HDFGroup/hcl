@@ -22,7 +22,6 @@
 #define INCLUDE_HCL_CLOCK_GLOBAL_CLOCK_H_
 
 #include <stdint-gcc.h>
-#include <mpi.h>
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -46,7 +45,7 @@ class global_clock {
     bool is_server;
     bip::interprocess_mutex* mutex;
     really_long memory_allocated;
-    int my_rank, comm_size, num_servers;
+    int num_servers;
     uint16_t my_server;
     bip::managed_mapped_file segment;
     std::string name, func_prefix;

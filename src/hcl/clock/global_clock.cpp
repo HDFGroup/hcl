@@ -33,8 +33,6 @@ global_clock::~global_clock() {
 global_clock::global_clock(std::string name_)
     : is_server(HCL_CONF->IS_SERVER),
       memory_allocated(1024ULL * 1024ULL * 128ULL),
-      my_rank(0),
-      comm_size(1),
       num_servers(HCL_CONF->NUM_SERVERS),
       my_server(HCL_CONF->MY_SERVER),
       segment(),
@@ -44,8 +42,6 @@ global_clock::global_clock(std::string name_)
       backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_) {
 
     AutoTrace trace = AutoTrace("hcl::global_clock");
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     name = name+"_"+std::to_string(my_server);
     rpc = Singleton<RPC>::GetInstance();
     if (is_server) {

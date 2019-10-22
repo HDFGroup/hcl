@@ -29,8 +29,6 @@
 #include <hcl/communication/rpc_factory.h>
 #include <hcl/common/singleton.h>
 #include <hcl/common/debug.h>
-/** MPI Headers**/
-#include <mpi.h>
 /** RPC Lib Headers**/
 #ifdef HCL_ENABLE_RPCLIB
 #include <rpc/server.h>
@@ -60,7 +58,7 @@
 
 namespace hcl {
 /**
- * This is a Distributed Map Class. It uses shared memory + RPC + MPI to
+ * This is a Distributed Map Class. It uses shared memory + RPC to
  * achieve the data structure.
  *
  * @tparam MappedType, the value of the Map
@@ -79,7 +77,7 @@ class map {
     typedef boost::interprocess::map<KeyType, MappedType, Compare, ShmemAllocator>
     MyMap;
     /** Class attributes**/
-    int comm_size, my_rank, num_servers;
+    int num_servers;
     uint16_t  my_server;
     std::shared_ptr<RPC> rpc;
     really_long memory_allocated;

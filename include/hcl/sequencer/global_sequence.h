@@ -25,7 +25,6 @@
 #include <hcl/communication/rpc_factory.h>
 #include <hcl/common/singleton.h>
 #include <stdint-gcc.h>
-#include <mpi.h>
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -43,7 +42,7 @@ class global_sequence {
     uint64_t* value;
     bool is_server;
     bip::interprocess_mutex* mutex;
-    int my_rank, comm_size, num_servers;
+    int num_servers;
     uint16_t my_server;
     really_long memory_allocated;
     bip::managed_mapped_file segment;

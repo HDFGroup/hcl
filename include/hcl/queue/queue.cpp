@@ -24,9 +24,7 @@ queue<MappedType>::~queue() {
 }
 template<typename MappedType>
 queue<MappedType>::queue(std::string name_)
-    : comm_size(1),
-      my_rank(0),
-      num_servers(HCL_CONF->NUM_SERVERS),
+    : num_servers(HCL_CONF->NUM_SERVERS),
       my_server(HCL_CONF->MY_SERVER),
       memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
       is_server(HCL_CONF->IS_SERVER),
@@ -38,9 +36,6 @@ queue<MappedType>::queue(std::string name_)
       backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)) {
 
     AutoTrace trace = AutoTrace("hcl::queue(local)");
-    /* Initialize MPI rank and size of world */
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     /* create per server name for shared memory. Needed if multiple servers are
        spawned on one node*/
     this->name += "_" + std::to_string(my_server);
@@ -194,7 +189,7 @@ bool queue<MappedType>::LocalWaitForElement() {
     int count = 0;
     while (my_queue->size() == 0) {
         usleep(10);
-        if (count == 0) printf("Server %d, No Events in Queue\n", my_rank);
+        if (count == 0) printf("Server %d, No Events in Queue\n", my_server);
         count++;
     }
     return true;

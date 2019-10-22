@@ -27,7 +27,6 @@
 #include <hcl/common/macros.h>
 #include <hcl/common/singleton.h>
 #include <hcl/common/typedefs.h>
-#include <mpi.h>
 
 /** RPC Lib Headers**/
 #ifdef HCL_ENABLE_RPCLIB

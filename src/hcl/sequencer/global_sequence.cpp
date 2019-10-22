@@ -28,8 +28,6 @@ global_sequence::~global_sequence() {
 
 global_sequence::global_sequence(std::string name_)
     : is_server(HCL_CONF->IS_SERVER),
-      my_rank(0),
-      comm_size(1),
       num_servers(HCL_CONF->NUM_SERVERS),
       my_server(HCL_CONF->MY_SERVER),
       memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
@@ -40,8 +38,6 @@ global_sequence::global_sequence(std::string name_)
       backed_file(HCL_CONF->BACKED_FILE_DIR+PATH_SEPARATOR+name_) {
 
     AutoTrace trace = AutoTrace("hcl::global_sequence");
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     name = name+"_"+std::to_string(my_server);
     rpc = Singleton<RPCFactory>::GetInstance()->GetRPC(HCL_CONF->RPC_PORT);
     if (is_server) {
