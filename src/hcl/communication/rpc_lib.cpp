@@ -66,23 +66,16 @@ RPC::RPC() : server_port(HCL_CONF->RPC_PORT), server_list() {
 #endif
 #ifdef HCL_ENABLE_THALLIUM_TCP
             case THALLIUM_TCP: {
-                engine_init_str += HCL_CONF->TCP_CONF;
-                engine_init_str += "://";
-                engine_init_str += HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER];
-                engine_init_str += ":";
-                engine_init_str += std::to_string(server_port + HCL_CONF->MY_SERVER);
+                engine_init_str = HCL_CONF->TCP_CONF + "://" + HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER] +
+                    ":" + std::to_string(server_port + HCL_CONF->MY_SERVER);
                 break;
             }
 #endif
 #ifdef HCL_ENABLE_THALLIUM_ROCE
             case THALLIUM_ROCE: {
-                engine_init_str += HCL_CONF->VERBS_CONF;
-                engine_init_str += "://";
-                engine_init_str += HCL_CONF->VERBS_DOMAIN;
-                engine_init_str += "://";
-                engine_init_str += HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER];
-                engine_init_str += ":";
-                engine_init_str += std::to_string(server_port+HCL_CONF->MY_SERVER);
+                engine_init_str = HCL_CONF->VERBS_CONF + "://" + HCL_CONF->VERBS_DOMAIN + "://" +
+                    HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER] + ":" +
+                    std::to_string(server_port+HCL_CONF->MY_SERVER);
                 break;
             }
 #endif

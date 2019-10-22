@@ -4,7 +4,7 @@ LOCAL=${HOME}/local
 mkdir build
 pushd build
 
-CXXFLAGS="-I${LOCAL}/include -fsanitize=address -O1 -fno-omi-frame-pointer -g" \
+CXXFLAGS="-I${LOCAL}/include -fsanitize=address -O1 -fno-omit-frame-pointer -g" \
 LDFLAGS="-L${LOCAL}/lib"                                       \
     cmake                                                      \
         -DCMAKE_INSTALL_PREFIX=${LOCAL}                        \
@@ -19,4 +19,19 @@ LDFLAGS="-L${LOCAL}/lib"                                       \
         -DBUILD_TEST=ON                                        \
         ..
 
-cmake --build . -- -j 2 VERBOSE=1 && make install
+cmake --build . -- -j 2 VERBOSE=1 || exit 1
+
+if [ "${HCL_ENABLE_RPCLIB}" = "ON" ]; then
+    pushd test
+    # TODO(chogan): Run tests via ctest and enable Thallium tests
+    mpiexec -n 2 ./map_test || exit 1
+    mpiexec -n 2 ./multimap_test || exit 1
+    mpiexec -n 2 ./priority_queue_test || exit 1
+    mpiexec -n 2 ./queue_test || exit 1
+    mpiexec -n 2 ./set_test || exit 1
+    mpiexec -n 2 ./unordered_map_test || exit 1
+    popd
+fi
+
+make install || exit 1
+popd

@@ -15,6 +15,7 @@ addons:
   apt:
     packages:
       - libboost-dev
+      - mpich
       - libmpich-dev
 
 thallium_deps: &thallium_deps
