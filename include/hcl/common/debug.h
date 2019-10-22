@@ -49,7 +49,6 @@ inline void handler(int sig) {
     size_t size;
     // get void*'s for all entries on the stack
     size = backtrace(array, 300);
-    int rank, comm_size;
     // print out all the frames to stderr
     fprintf(stderr, "Error: signal %d\n", sig);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
@@ -122,7 +121,6 @@ using std::cout;
 using std::endl;
 using std::string;
 
-using namespace std;
 class AutoTrace
 {
 #if  defined(HCL_TIMER)
@@ -132,6 +130,12 @@ class AutoTrace
 #if defined(HCL_TRACE) || defined(HCL_TIMER)
     string m_line;
 #endif
+
+    struct ArgSink {
+        template<typename ...Args>
+        ArgSink(Args const & ...) {}
+    };
+
   public:
     template <typename... Args>
     AutoTrace(
@@ -165,6 +169,9 @@ class AutoTrace
             std::apply([&stream](auto&&... args) {((stream << args << ", "), ...);}, args_obj);
         }
         stream << ");";
+#else
+        // Swallow args when they're not used. Silences compiler warnings.
+        ArgSink(args...);
 #endif
 #if defined(HCL_TRACE) || defined(HCL_TIMER)
         stream <<"start"<< endl;

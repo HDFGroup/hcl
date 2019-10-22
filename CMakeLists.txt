@@ -53,6 +53,7 @@ set(HCL_SRC  include/hcl/common/singleton.h
                 include/hcl/communication/rpc_factory.h)
 
 add_library(${PROJECT_NAME} SHARED ${HCL_SRC})
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -81,13 +82,7 @@ endif()
 
 set(LIB_FLAGS ${RPC_LIB_FLAGS} -lmpi -lpthread -lrt)
 
-# libs for NATS tests
-#set(LIB_FLAGS ${LIB_FLAGS} -lnats)
-
-# libs for Redis tests
-#set(LIB_FLAGS ${LIB_FLAGS} -lev -L/home/kbateman/install/lib/ -L/home/kbateman/install/lib64/ -lhiredis -lredox)
-
-target_link_libraries(hcl ${LIB_FLAGS})
+target_link_libraries(${PROJECT_NAME} ${LIB_FLAGS})
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -100,7 +95,6 @@ else()
    install(FILES ${CMAKE_BINARY_DIR}/hcl.pc
                   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
 endif()
-
 
 option(BUILD_TEST "Build the unit tests" ON)
 if(BUILD_TEST)

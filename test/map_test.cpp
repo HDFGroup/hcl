@@ -17,6 +17,7 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
+#include <assert.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -111,7 +112,7 @@ int main (int argc,char* argv[])
     }
     MPI_Barrier(MPI_COMM_WORLD);
     bool is_server=(my_rank+1) % ranks_per_server == 0;
-    int my_server=my_rank / ranks_per_server;
+    size_t my_server=my_rank / ranks_per_server;
     int num_servers=comm_size/ranks_per_server;
 
     // The following is used to switch to 40g network on Ares.
@@ -124,7 +125,7 @@ int main (int argc,char* argv[])
 
     size_t size_of_elem = sizeof(int);
 
-    printf("rank %d, is_server %d, my_server %d, num_servers %d\n",my_rank,is_server,my_server,num_servers);
+    printf("rank %d, is_server %d, my_server %zu, num_servers %d\n",my_rank,is_server,my_server,num_servers);
 
     const int array_size=TEST_REQUEST_SIZE;
 

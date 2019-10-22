@@ -3,7 +3,7 @@
  * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
  *
  * This file is part of HCL
- * 
+ *
  * HCL is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -32,12 +32,19 @@ unordered_map<KeyType, MappedType>::~unordered_map() {
 
 template<typename KeyType, typename MappedType>
 unordered_map<KeyType, MappedType>::unordered_map(CharStruct name_)
-        : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
-          num_servers(HCL_CONF->NUM_SERVERS),
-          comm_size(1), my_rank(0), memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
-          name(name_), segment(), myHashMap(), func_prefix(name_),
-          backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
-          server_on_node(HCL_CONF->SERVER_ON_NODE) {
+    : comm_size(1),
+      my_rank(0),
+      num_servers(HCL_CONF->NUM_SERVERS),
+      my_server(HCL_CONF->MY_SERVER),
+      memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
+      is_server(HCL_CONF->IS_SERVER),
+      segment(),
+      name(name_),
+      func_prefix(name_),
+      myHashMap(),
+      server_on_node(HCL_CONF->SERVER_ON_NODE),
+      backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)) {
+
     // init my_server, num_servers, server_on_node, processor_name from RPC
     AutoTrace trace = AutoTrace("hcl::unordered_map");
 
@@ -63,70 +70,69 @@ unordered_map<KeyType, MappedType>::unordered_map(CharStruct name_)
         /* Create a RPC server and map the methods to it. */
   switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
-  case RPCLIB: {
-        std::function<bool(KeyType &, MappedType &)> putFunc(
-            std::bind(&unordered_map<KeyType, MappedType>::LocalPut, this,
-                      std::placeholders::_1, std::placeholders::_2));
-        std::function<std::pair<bool, MappedType>(KeyType &)> getFunc(
-            std::bind(&unordered_map<KeyType, MappedType>::LocalGet, this,
-                      std::placeholders::_1));
-        std::function<std::pair<bool, MappedType>(KeyType &)> eraseFunc(
-            std::bind(&unordered_map<KeyType, MappedType>::LocalErase, this,
-                      std::placeholders::_1));
-        std::function<std::vector<std::pair<KeyType, MappedType>>(void)>
-                getAllDataInServerFunc(std::bind(
-                    &unordered_map<KeyType, MappedType>::LocalGetAllDataInServer,
-                    this));
-        rpc->bind(func_prefix+"_Put", putFunc);
-        rpc->bind(func_prefix+"_Get", getFunc);
-        rpc->bind(func_prefix+"_Erase", eraseFunc);
-        rpc->bind(func_prefix+"_GetAllData", getAllDataInServerFunc);
-	break;
-  }
+      case RPCLIB: {
+          std::function<bool(KeyType &, MappedType &)> putFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::LocalPut, this,
+                        std::placeholders::_1, std::placeholders::_2));
+          std::function<std::pair<bool, MappedType>(KeyType &)> getFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::LocalGet, this,
+                        std::placeholders::_1));
+          std::function<std::pair<bool, MappedType>(KeyType &)> eraseFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::LocalErase, this,
+                        std::placeholders::_1));
+          std::function<std::vector<std::pair<KeyType, MappedType>>(void)>
+              getAllDataInServerFunc(std::bind(
+                                         &unordered_map<KeyType, MappedType>::LocalGetAllDataInServer,
+                                         this));
+          rpc->bind(func_prefix+"_Put", putFunc);
+          rpc->bind(func_prefix+"_Get", getFunc);
+          rpc->bind(func_prefix+"_Erase", eraseFunc);
+          rpc->bind(func_prefix+"_GetAllData", getAllDataInServerFunc);
+          break;
+      }
 #endif
 #ifdef HCL_ENABLE_THALLIUM_TCP
-  case THALLIUM_TCP:
+      case THALLIUM_TCP:
 #endif
 #ifdef HCL_ENABLE_THALLIUM_ROCE
-  case THALLIUM_ROCE:
+      case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-    {
+      {
+          std::function<void(const tl::request &, KeyType &, MappedType &)> putFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalPut, this,
+                        std::placeholders::_1, std::placeholders::_2,
+                        std::placeholders::_3));
+          // std::function<void(const tl::request &, tl::bulk &, KeyType &)> putFunc(
+          //     std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalPut, this,
+          //               std::placeholders::_1, std::placeholders::_2,
+          //               std::placeholders::_3));
+          std::function<void(const tl::request &, KeyType &)> getFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalGet, this,
+                        std::placeholders::_1, std::placeholders::_2));
+          std::function<void(const tl::request &, KeyType &)> eraseFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalErase, this,
+                        std::placeholders::_1, std::placeholders::_2));
+          std::function<void(const tl::request &)> getAllDataInServerFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalGetAllDataInServer,
+                        this, std::placeholders::_1));
 
-     std::function<void(const tl::request &, KeyType &, MappedType &)> putFunc(
-            std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalPut, this,
-                      std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3));
-        // std::function<void(const tl::request &, tl::bulk &, KeyType &)> putFunc(
-        //     std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalPut, this,
-        //               std::placeholders::_1, std::placeholders::_2,
-        //               std::placeholders::_3));
-        std::function<void(const tl::request &, KeyType &)> getFunc(
-            std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalGet, this,
-                      std::placeholders::_1, std::placeholders::_2));
-        std::function<void(const tl::request &, KeyType &)> eraseFunc(
-            std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalErase, this,
-                      std::placeholders::_1, std::placeholders::_2));
-        std::function<void(const tl::request &)>
-                getAllDataInServerFunc(std::bind(
-                    &unordered_map<KeyType, MappedType>::ThalliumLocalGetAllDataInServer,
-                    this, std::placeholders::_1));
-
-        rpc->bind(func_prefix+"_Put", putFunc);
-        rpc->bind(func_prefix+"_Get", getFunc);
-        rpc->bind(func_prefix+"_Erase", eraseFunc);
-        rpc->bind(func_prefix+"_GetAllData", getAllDataInServerFunc);
-	break;
-    }
+          rpc->bind(func_prefix+"_Put", putFunc);
+          rpc->bind(func_prefix+"_Get", getFunc);
+          rpc->bind(func_prefix+"_Erase", eraseFunc);
+          rpc->bind(func_prefix+"_GetAllData", getAllDataInServerFunc);
+          break;
+      }
 #endif
+      default:
+          break;
   }
         // srv->suppress_exceptions(true);
-    }else if (!is_server && server_on_node) {
+    } else if (!is_server && server_on_node) {
         segment = boost::interprocess::managed_mapped_file(boost::interprocess::open_only, backed_file.c_str());
         std::pair<MyHashMap *, boost::interprocess::managed_mapped_file::size_type> res;
         res = segment.find<MyHashMap>(name.c_str());
         myHashMap = res.first;
-        size_t size = myHashMap->size();
         std::pair<boost::interprocess::interprocess_mutex *, boost::interprocess::managed_shared_memory::size_type> res2;
         res2 = segment.find<boost::interprocess::interprocess_mutex>("mtx");
         mutex = res2.first;
@@ -144,7 +150,7 @@ bool unordered_map<KeyType, MappedType>::LocalPut(KeyType &key,
                                                   MappedType &data) {
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>lock(*mutex);
     myHashMap->insert_or_assign(key, data);
-    
+
     return true;
 }
 /**
@@ -322,7 +328,7 @@ unordered_map<KeyType, MappedType>::LocalErase(KeyType &key) {
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
             lock(*mutex);
     size_t s = myHashMap->erase(key);
-    
+
     return std::pair<bool, MappedType>(s > 0, MappedType());
 }
 
@@ -401,7 +407,7 @@ unordered_map<KeyType, MappedType>::GetAllData() {
                         current_server.end());
     for (int i = 0; i < num_servers; ++i) {
         if (i != my_server) {
-	  
+
             typedef std::vector<std::pair<KeyType, MappedType> > ret_type;
             auto server = RPC_CALL_WRAPPER1("_GetAllData",i, ret_type);
             final_values.insert(final_values.end(), server.begin(), server.end());

@@ -28,14 +28,20 @@ priority_queue<MappedType, Compare>::~priority_queue() {
 }
 
 template<typename MappedType, typename Compare>
-priority_queue<MappedType,
-               Compare>::priority_queue(std::string name_)
-                       : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
-                         num_servers(HCL_CONF->NUM_SERVERS),
-                         comm_size(1), my_rank(0), memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
-                         name(name_), segment(), queue(), func_prefix(name_),
-                         backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
-                         server_on_node(HCL_CONF->SERVER_ON_NODE) {
+priority_queue<MappedType, Compare>::priority_queue(std::string name_)
+    : comm_size(1),
+      my_rank(0),
+      num_servers(HCL_CONF->NUM_SERVERS),
+      my_server(HCL_CONF->MY_SERVER),
+      memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
+      is_server(HCL_CONF->IS_SERVER),
+      segment(),
+      name(name_),
+      func_prefix(name_),
+      queue(),
+      server_on_node(HCL_CONF->SERVER_ON_NODE),
+      backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)) {
+
     AutoTrace trace = AutoTrace("hcl::priority_queue");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
@@ -86,30 +92,30 @@ priority_queue<MappedType,
             case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-                {
-                    std::function<void(const tl::request &, MappedType &)> pushFunc(
-                        std::bind(&hcl::priority_queue<MappedType,
-                                  Compare>::ThalliumLocalPush, this,
-                                  std::placeholders::_1, std::placeholders::_2));
-                    std::function<void(const tl::request &)> popFunc(std::bind(
-                        &hcl::priority_queue<MappedType,
-                        Compare>::ThalliumLocalPop, this, std::placeholders::_1));
-                    std::function<void(const tl::request &)> sizeFunc(std::bind(
-                        &hcl::priority_queue<MappedType,
-                        Compare>::ThalliumLocalSize, this, std::placeholders::_1));
-                    std::function<void(const tl::request &)> topFunc(std::bind(
-                        &hcl::priority_queue<MappedType,
-                        Compare>::ThalliumLocalTop, this,
-                        std::placeholders::_1));
-                    rpc->bind(func_prefix+"_Push", pushFunc);
-                    rpc->bind(func_prefix+"_Pop", popFunc);
-                    rpc->bind(func_prefix+"_Top", topFunc);
-                    rpc->bind(func_prefix+"_Size", sizeFunc);
-                    break;
-                }
+            {
+                std::function<void(const tl::request &, MappedType &)> pushFunc(
+                    std::bind(&hcl::priority_queue<MappedType, Compare>::ThalliumLocalPush,
+                              this, std::placeholders::_1, std::placeholders::_2));
+                std::function<void(const tl::request &)> popFunc(
+                    std::bind(&hcl::priority_queue<MappedType, Compare>::ThalliumLocalPop,
+                              this, std::placeholders::_1));
+                std::function<void(const tl::request &)> sizeFunc(
+                    std::bind(&hcl::priority_queue<MappedType, Compare>::ThalliumLocalSize,
+                              this, std::placeholders::_1));
+                std::function<void(const tl::request &)> topFunc(
+                    std::bind(&hcl::priority_queue<MappedType, Compare>::ThalliumLocalTop,
+                              this, std::placeholders::_1));
+                rpc->bind(func_prefix+"_Push", pushFunc);
+                rpc->bind(func_prefix+"_Pop", popFunc);
+                rpc->bind(func_prefix+"_Top", topFunc);
+                rpc->bind(func_prefix+"_Size", sizeFunc);
+                break;
+            }
 #endif
+            default:
+                break;
         }
-    }else if (!is_server && server_on_node) {
+    } else if (!is_server && server_on_node) {
         /* Map the clients to their respective memory pools */
         segment = bip::managed_mapped_file(bip::open_only, backed_file.c_str());
         std::pair<Queue*, bip::managed_mapped_file::size_type> res;

@@ -30,12 +30,19 @@ set<KeyType, Compare>::~set() {
 
 template<typename KeyType, typename Compare>
 set<KeyType, Compare>::set(CharStruct name_)
-        : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
-          num_servers(HCL_CONF->NUM_SERVERS),
-          comm_size(1), my_rank(0), memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
-          name(name_), segment(), myset(), func_prefix(name_),
-          backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
-          server_on_node(HCL_CONF->SERVER_ON_NODE) {
+    : comm_size(1),
+      my_rank(0),
+      num_servers(HCL_CONF->NUM_SERVERS),
+      my_server(HCL_CONF->MY_SERVER),
+      memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
+      is_server(HCL_CONF->IS_SERVER),
+      segment(),
+      name(name_),
+      func_prefix(name_),
+      myset(),
+      server_on_node(HCL_CONF->SERVER_ON_NODE),
+      backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)) {
+
     AutoTrace trace = AutoTrace("hcl::set");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
@@ -110,7 +117,7 @@ set<KeyType, Compare>::set(CharStruct name_)
             case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-                {
+            {
 
                 std::function<void(const tl::request &, KeyType &)> putFunc(
                     std::bind(&set<KeyType, Compare>::ThalliumLocalPut, this,
@@ -121,32 +128,24 @@ set<KeyType, Compare>::set(CharStruct name_)
                 std::function<void(const tl::request &, KeyType &)> eraseFunc(
                     std::bind(&set<KeyType, Compare>::ThalliumLocalErase, this,
                               std::placeholders::_1, std::placeholders::_2));
-                std::function<void(const tl::request &)>
-                        getAllDataInServerFunc(std::bind(
-                            &set<KeyType, Compare>::ThalliumLocalGetAllDataInServer,
-                            this, std::placeholders::_1));
-                std::function<void(const tl::request &, KeyType &, KeyType &)>
-                        containsInServerFunc(std::bind(&set<KeyType,
-                                                       Compare>::ThalliumLocalContainsInServer, this,
-                                                       std::placeholders::_1,
-                                                       std::placeholders::_2,
-						       std::placeholders::_3));
-                std::function<void(const tl::request &)>
-                        seekFirstFunc(std::bind(&set<KeyType,
-						Compare>::ThalliumLocalSeekFirst, this,
-						std::placeholders::_1));
-                std::function<void(const tl::request &)>
-                        popFirstFunc(std::bind(&set<KeyType,
-					       Compare>::ThalliumLocalPopFirst, this,
-					       std::placeholders::_1));
-                std::function<void(const tl::request &)>
-                        sizeFunc(std::bind(&set<KeyType,
-                                           Compare>::ThalliumLocalSize, this,
-					   std::placeholders::_1));
+                std::function<void(const tl::request &)> getAllDataInServerFunc(
+                    std::bind(&set<KeyType, Compare>::ThalliumLocalGetAllDataInServer,
+                              this, std::placeholders::_1));
+                std::function<void(const tl::request &, KeyType &, KeyType &)> containsInServerFunc(
+                    std::bind(&set<KeyType, Compare>::ThalliumLocalContainsInServer, this,
+                              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+                std::function<void(const tl::request &)> seekFirstFunc(
+                    std::bind(&set<KeyType, Compare>::ThalliumLocalSeekFirst, this,
+                              std::placeholders::_1));
+                std::function<void(const tl::request &)> popFirstFunc(
+                    std::bind(&set<KeyType, Compare>::ThalliumLocalPopFirst, this,
+                              std::placeholders::_1));
+                std::function<void(const tl::request &)> sizeFunc(
+                    std::bind(&set<KeyType, Compare>::ThalliumLocalSize, this,
+                              std::placeholders::_1));
                 std::function<void(const tl::request &, uint32_t)> localSeekFirstNFunc(
-                        std::bind(&set<KeyType, Compare>::ThalliumLocalSeekFirstN, this,
-				  std::placeholders::_1,
-				  std::placeholders::_2));
+                    std::bind(&set<KeyType, Compare>::ThalliumLocalSeekFirstN, this,
+                              std::placeholders::_1, std::placeholders::_2));
                 rpc->bind(func_prefix+"_Put", putFunc);
                 rpc->bind(func_prefix+"_Get", getFunc);
                 rpc->bind(func_prefix+"_Erase", eraseFunc);
@@ -157,11 +156,13 @@ set<KeyType, Compare>::set(CharStruct name_)
                 rpc->bind(func_prefix+"_PopFirst", popFirstFunc);
                 // rpc->bind(func_prefix+"_SeekFirstN", localSeekFirstNFunc);
                 rpc->bind(func_prefix+"_Size", sizeFunc);
-		break;
-                }
+                break;
+            }
 #endif
+            default:
+                break;
         }
-    }else if (!is_server && server_on_node) {
+    } else if (!is_server && server_on_node) {
         segment = boost::interprocess::managed_mapped_file(
             boost::interprocess::open_only, backed_file.c_str());
         std::pair<MySet*,
@@ -414,7 +415,7 @@ std::pair<bool, std::vector<KeyType>> set<KeyType, Compare>::LocalSeekFirstN(uin
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     auto keys = std::vector<KeyType>();
     auto iterator = myset->begin();
-    int i=0;
+    uint32_t i=0;
     while(iterator != myset->end() && i<n){
         keys.push_back(*iterator);
         i++;

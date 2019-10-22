@@ -104,7 +104,7 @@ class queue {
     THALLIUM_DEFINE1(LocalPop)
     THALLIUM_DEFINE1(LocalWaitForElement)
     THALLIUM_DEFINE1(LocalSize)
-#endif    
+#endif
 
     bool Push(MappedType &data, uint16_t &key_int);
     std::pair<bool, MappedType> Pop(uint16_t &key_int);

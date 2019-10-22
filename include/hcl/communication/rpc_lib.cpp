@@ -37,13 +37,16 @@ void RPC::bind(CharStruct str, F func) {
         case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-            {
-	      thallium_engine->define(str.string(), func);
-                break;
-            }
+        {
+            thallium_engine->define(str.string(), func);
+            break;
+        }
 #endif
+        default:
+            break;
     }
 }
+
 template <typename Response, typename... Args>
 Response RPC::callWithTimeout(uint16_t server_index, int timeout_ms, CharStruct const &func_name, Args... args) {
     AutoTrace trace = AutoTrace("RPC::call", server_index, func_name);
@@ -105,7 +108,6 @@ Response RPC::call(uint16_t server_index,
                    CharStruct const &func_name,
                    Args... args) {
     AutoTrace trace = AutoTrace("RPC::call", server_index, func_name);
-    int16_t port = server_port + server_index;
 
     switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
@@ -155,6 +157,8 @@ Response RPC::call(uint16_t server_index,
             break;
         }
 #endif
+        default:
+            break;
     }
 }
 
@@ -164,7 +168,6 @@ std::future<Response> RPC::async_call(uint16_t server_index,
                                       CharStruct const &func_name,
                                         Args... args) {
     AutoTrace trace = AutoTrace("RPC::call", server_index, func_name);
-    int16_t port = server_port + server_index;
 
     switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
@@ -187,6 +190,8 @@ std::future<Response> RPC::async_call(uint16_t server_index,
             break;
         }
 #endif
+        default:
+            break;
     }
 }
 

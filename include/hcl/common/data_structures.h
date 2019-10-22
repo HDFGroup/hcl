@@ -79,7 +79,7 @@ typedef struct CharStruct {
     char* data() {
         return value;
     }
-    const size_t size() const {
+    size_t size() const {
         return strlen(value);
     }
     /**

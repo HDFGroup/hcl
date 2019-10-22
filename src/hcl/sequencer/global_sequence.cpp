@@ -27,13 +27,18 @@ global_sequence::~global_sequence() {
 }
 
 global_sequence::global_sequence(std::string name_)
-        : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
-          num_servers(HCL_CONF->NUM_SERVERS),
-          comm_size(1), my_rank(0), memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
-          backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_),
-          name(name_), segment(),
-          func_prefix(name_),
-          server_on_node(HCL_CONF->SERVER_ON_NODE) {
+    : is_server(HCL_CONF->IS_SERVER),
+      my_rank(0),
+      comm_size(1),
+      num_servers(HCL_CONF->NUM_SERVERS),
+      my_server(HCL_CONF->MY_SERVER),
+      memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
+      segment(),
+      name(name_),
+      func_prefix(name_),
+      server_on_node(HCL_CONF->SERVER_ON_NODE),
+      backed_file(HCL_CONF->BACKED_FILE_DIR+PATH_SEPARATOR+name_) {
+
     AutoTrace trace = AutoTrace("hcl::global_sequence");
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -56,22 +61,23 @@ global_sequence::global_sequence(std::string name_)
             case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-                {
-                    std::function<void(const tl::request &)> getNextSequence(std::bind(
-                        &hcl::global_sequence::ThalliumLocalGetNextSequence, this,
-                        std::placeholders::_1));
+            {
+                std::function<void(const tl::request &)> getNextSequence(
+                    std::bind(&hcl::global_sequence::ThalliumLocalGetNextSequence, this,
+                              std::placeholders::_1));
                     rpc->bind(func_prefix+"_GetNextSequence", getNextSequence);
                     break;
                 }
 #endif
+            default:
+                break;
         }
 
         boost::interprocess::file_mapping::remove(backed_file.c_str());
         segment = bip::managed_mapped_file(bip::create_only, backed_file.c_str(), 65536);
         value = segment.construct<uint64_t>(name.c_str())(0);
-        mutex = segment.construct<boost::interprocess::interprocess_mutex>(
-            "mtx")();
-    }else if (!is_server && server_on_node) {
+        mutex = segment.construct<boost::interprocess::interprocess_mutex>("mtx")();
+    } else if (!is_server && server_on_node) {
         segment = bip::managed_mapped_file(bip::open_only, backed_file.c_str());
         std::pair<uint64_t*, bip::managed_mapped_file::size_type> res;
         res = segment.find<uint64_t> (name.c_str());

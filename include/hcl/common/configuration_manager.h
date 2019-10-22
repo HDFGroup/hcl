@@ -33,14 +33,13 @@
 #include <hcl/common/data_structures.h>
 #include "typedefs.h"
 
-namespace hcl{
+namespace hcl {
 
     class ConfigurationManager {
     public:
         uint16_t RPC_PORT;
         uint16_t RPC_THREADS;
         RPCImplementation RPC_IMPLEMENTATION;
-        int MPI_RANK, COMM_SIZE;
         CharStruct TCP_CONF;
         CharStruct VERBS_CONF;
         CharStruct VERBS_DOMAIN;
@@ -56,36 +55,42 @@ namespace hcl{
 
         bool DYN_CONFIG;  // Does not do anything (yet)
 
-      ConfigurationManager():
-              SERVER_LIST(),
-              BACKED_FILE_DIR("/dev/shm"),
-              MEMORY_ALLOCATED(1024ULL * 1024ULL * 128ULL),
-              RPC_PORT(8080), RPC_THREADS(1),
+      ConfigurationManager()
+          : RPC_PORT(8080),
+            RPC_THREADS(1),
 #if defined(HCL_ENABLE_RPCLIB)
-              RPC_IMPLEMENTATION(RPCLIB),
+            RPC_IMPLEMENTATION(RPCLIB),
 #elif defined(HCL_ENABLE_THALLIUM_TCP)
-        RPC_IMPLEMENTATION(THALLIUM_TCP),
+            RPC_IMPLEMENTATION(THALLIUM_TCP),
 #elif defined(HCL_ENABLE_THALLIUM_ROCE)
-        RPC_IMPLEMENTATION(THALLIUM_ROCE),
+            RPC_IMPLEMENTATION(THALLIUM_ROCE),
 #endif
-              TCP_CONF("ofi+tcp"), VERBS_CONF("verbs"), VERBS_DOMAIN("mlx5_0"),
-              IS_SERVER(false), MY_SERVER(0), NUM_SERVERS(1),
-              SERVER_ON_NODE(true), SERVER_LIST_PATH("./server_list"), DYN_CONFIG(false) {
+            TCP_CONF("ofi+tcp"),
+            VERBS_CONF("verbs"),
+            VERBS_DOMAIN("mlx5_0"),
+            MEMORY_ALLOCATED(1024ULL * 1024ULL * 128ULL),
+            IS_SERVER(false),
+            MY_SERVER(0),
+            NUM_SERVERS(1),
+            SERVER_ON_NODE(true),
+            SERVER_LIST_PATH("./server_list"),
+            SERVER_LIST(),
+            BACKED_FILE_DIR("/dev/shm"),
+            DYN_CONFIG(false) {
+
           AutoTrace trace = AutoTrace("ConfigurationManager");
-          MPI_Comm_size(MPI_COMM_WORLD, &COMM_SIZE);
-          MPI_Comm_rank(MPI_COMM_WORLD, &MPI_RANK);
       }
 
         std::vector<CharStruct> LoadServers(){
           SERVER_LIST=std::vector<CharStruct>();
-          fstream file;
-          file.open(SERVER_LIST_PATH.c_str(), ios::in);
+          std::fstream file;
+          file.open(SERVER_LIST_PATH.c_str(), std::ios::in);
           if (file.is_open()) {
               std::string file_line;
               std::string server_node_name;
               int count;
               while (getline(file, file_line)) {
-                  int split_loc = file_line.find(':');  // split to node and net
+                  size_t split_loc = file_line.find(':');  // split to node and net
                   if (split_loc != std::string::npos) {
                       server_node_name = file_line.substr(0, split_loc);
                       count = atoi(file_line.substr(split_loc+1, std::string::npos).c_str());
@@ -107,23 +112,23 @@ namespace hcl{
           file.close();
           return SERVER_LIST;
       }
-      void ConfigureDefaultClient(std::string server_list_path=""){
-          if(server_list_path!="") SERVER_LIST_PATH = server_list_path;
-          LoadServers();
-          IS_SERVER=false;
-          MY_SERVER=MPI_RANK%NUM_SERVERS;
-          SERVER_ON_NODE=false;
-      }
 
-        void ConfigureDefaultServer(std::string server_list_path=""){
-            if(server_list_path!="") SERVER_LIST_PATH = server_list_path;
-            LoadServers();
-            IS_SERVER=true;
-            MY_SERVER=MPI_RANK%NUM_SERVERS;
-            SERVER_ON_NODE=true;
-        }
+    //   void ConfigureDefaultClient(std::string server_list_path=""){
+    //       if(server_list_path!="") SERVER_LIST_PATH = server_list_path;
+    //       LoadServers();
+    //       IS_SERVER=false;
+    //       MY_SERVER=MPI_RANK%NUM_SERVERS;
+    //       SERVER_ON_NODE=false;
+    //   }
+
+    //     void ConfigureDefaultServer(std::string server_list_path=""){
+    //         if(server_list_path!="") SERVER_LIST_PATH = server_list_path;
+    //         LoadServers();
+    //         IS_SERVER=true;
+    //         MY_SERVER=MPI_RANK%NUM_SERVERS;
+    //         SERVER_ON_NODE=true;
+    //     }
     };
-
 }
 
 #endif //INCLUDE_HCL_COMMON_CONFIGURATION_MANAGER_H

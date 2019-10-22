@@ -25,9 +25,9 @@ RPC::~RPC() {
         switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
-          // Twiddle thumbs
-          break;
-        }
+                // Twiddle thumbs
+                break;
+            }
 #endif
 #ifdef HCL_ENABLE_THALLIUM_TCP
             case THALLIUM_TCP:
@@ -43,12 +43,13 @@ RPC::~RPC() {
                 break;
             }
 #endif
+            default:
+                break;
         }
     }
 }
 
-RPC::RPC() : server_list(),
-             server_port(HCL_CONF->RPC_PORT) {
+RPC::RPC() : server_port(HCL_CONF->RPC_PORT), server_list() {
     AutoTrace trace = AutoTrace("RPC");
 
     server_list = HCL_CONF->LoadServers();
@@ -57,31 +58,36 @@ RPC::RPC() : server_list(),
     if (HCL_CONF->IS_SERVER) {
         switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
-        case RPCLIB: {
-            rpclib_server = std::make_shared<rpc::server>(server_port+HCL_CONF->MY_SERVER);
-            rpclib_server->suppress_exceptions(true);
-	break;
-      }
+            case RPCLIB: {
+                rpclib_server = std::make_shared<rpc::server>(server_port+HCL_CONF->MY_SERVER);
+                rpclib_server->suppress_exceptions(true);
+                break;
+            }
 #endif
 #ifdef HCL_ENABLE_THALLIUM_TCP
-        case THALLIUM_TCP: {
-	engine_init_str = HCL_CONF->TCP_CONF + "://" +
-	  HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER] +
-	  ":" +
-	  std::to_string(server_port + HCL_CONF->MY_SERVER);
-	break;
-      }
+            case THALLIUM_TCP: {
+                engine_init_str += HCL_CONF->TCP_CONF;
+                engine_init_str += "://";
+                engine_init_str += HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER];
+                engine_init_str += ":";
+                engine_init_str += std::to_string(server_port + HCL_CONF->MY_SERVER);
+                break;
+            }
 #endif
 #ifdef HCL_ENABLE_THALLIUM_ROCE
-      case THALLIUM_ROCE: {
-	  engine_init_str = HCL_CONF->VERBS_CONF + "://" +
-	    HCL_CONF->VERBS_DOMAIN + "://" +
-	    HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER] +
-	    ":" +
-	    std::to_string(server_port+HCL_CONF->MY_SERVER);
-	  break;
-	}
+            case THALLIUM_ROCE: {
+                engine_init_str += HCL_CONF->VERBS_CONF;
+                engine_init_str += "://";
+                engine_init_str += HCL_CONF->VERBS_DOMAIN;
+                engine_init_str += "://";
+                engine_init_str += HCL_CONF->SERVER_LIST[HCL_CONF->MY_SERVER];
+                engine_init_str += ":";
+                engine_init_str += std::to_string(server_port+HCL_CONF->MY_SERVER);
+                break;
+            }
 #endif
+            default:
+                break;
         }
     } else {
         switch (HCL_CONF->RPC_IMPLEMENTATION) {
@@ -105,6 +111,8 @@ RPC::RPC() : server_list(),
                 break;
             }
 #endif
+            default:
+                break;
         }
     }
     run(HCL_CONF->RPC_THREADS);
@@ -135,7 +143,7 @@ void RPC::run(size_t workers) {
         switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
-                    rpclib_server->async_run(workers);
+                rpclib_server->async_run(workers);
                 break;
             }
 #endif
@@ -146,11 +154,16 @@ void RPC::run(size_t workers) {
             case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-                {
-		  thallium_engine = hcl::Singleton<tl::engine>::GetInstance(engine_init_str.c_str(), THALLIUM_SERVER_MODE,true,HCL_CONF->RPC_THREADS);
-                    break;
-                }
+            {
+                thallium_engine = hcl::Singleton<tl::engine>::GetInstance(engine_init_str.c_str(),
+                                                                          THALLIUM_SERVER_MODE,
+                                                                          true,
+                                                                          HCL_CONF->RPC_THREADS);
+                break;
+            }
 #endif
+            default:
+                break;
         }
     }
 }

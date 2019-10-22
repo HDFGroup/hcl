@@ -29,14 +29,20 @@ multimap<KeyType, MappedType, Compare>::~multimap() {
 }
 
 template<typename KeyType, typename MappedType, typename Compare>
-multimap<KeyType, MappedType,
-         Compare>::multimap(std::string name_)
-                 : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
-                   num_servers(HCL_CONF->NUM_SERVERS),
-                   comm_size(1), my_rank(0), memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
-                   name(name_), segment(), mymap(), func_prefix(name_),
-                   backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
-                   server_on_node(HCL_CONF->SERVER_ON_NODE) {
+multimap<KeyType, MappedType, Compare>::multimap(std::string name_)
+    : comm_size(1),
+      my_rank(0),
+      num_servers(HCL_CONF->NUM_SERVERS),
+      my_server(HCL_CONF->MY_SERVER),
+      memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
+      is_server(HCL_CONF->IS_SERVER),
+      segment(),
+      name(name_),
+      func_prefix(name_),
+      mymap(),
+      server_on_node(HCL_CONF->SERVER_ON_NODE),
+      backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)) {
+
     AutoTrace trace = AutoTrace("hcl::multimap");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
@@ -58,7 +64,7 @@ multimap<KeyType, MappedType,
         mutex = segment.construct<boost::interprocess::interprocess_mutex>(
             "mtx")();
         /* Create a RPC server and map the methods to it. */
-                switch (HCL_CONF->RPC_IMPLEMENTATION) {
+        switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
                 std::function<bool(KeyType &, MappedType &)> putFunc(
@@ -94,38 +100,36 @@ multimap<KeyType, MappedType,
             case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-                {
+            {
 
-                    std::function<void(const tl::request &, KeyType &, MappedType &)> putFunc(
-                        std::bind(&multimap<KeyType, MappedType, Compare>::ThalliumLocalPut, this,
-                                  std::placeholders::_1, std::placeholders::_2,
-                                  std::placeholders::_3));
-                    std::function<void(const tl::request &, KeyType &)> getFunc(
-                        std::bind(&multimap<KeyType, MappedType, Compare>::ThalliumLocalGet, this,
-                                  std::placeholders::_1, std::placeholders::_2));
-                    std::function<void(const tl::request &, KeyType &)> eraseFunc(
-                        std::bind(&multimap<KeyType, MappedType, Compare>::ThalliumLocalErase, this,
-                                  std::placeholders::_1, std::placeholders::_2));
-                    std::function<void(const tl::request &)>
-                            getAllDataInServerFunc(std::bind(
-                                &multimap<KeyType, MappedType, Compare>::ThalliumLocalGetAllDataInServer,
-                                this, std::placeholders::_1));
-                    std::function<void(const tl::request &, KeyType &)>
-                            containsInServerFunc(std::bind(&multimap<KeyType, MappedType,
-                                                           Compare>::ThalliumLocalContainsInServer, this,
-                                                           std::placeholders::_1,
-							   std::placeholders::_2));
+                std::function<void(const tl::request &, KeyType &, MappedType &)> putFunc(
+                    std::bind(&multimap<KeyType, MappedType, Compare>::ThalliumLocalPut, this,
+                              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+                std::function<void(const tl::request &, KeyType &)> getFunc(
+                    std::bind(&multimap<KeyType, MappedType, Compare>::ThalliumLocalGet, this,
+                              std::placeholders::_1, std::placeholders::_2));
+                std::function<void(const tl::request &, KeyType &)> eraseFunc(
+                    std::bind(&multimap<KeyType, MappedType, Compare>::ThalliumLocalErase, this,
+                              std::placeholders::_1, std::placeholders::_2));
+                std::function<void(const tl::request &)> getAllDataInServerFunc(
+                    std::bind(&multimap<KeyType, MappedType, Compare>::ThalliumLocalGetAllDataInServer,
+                              this, std::placeholders::_1));
+                std::function<void(const tl::request &, KeyType &)> containsInServerFunc(
+                    std::bind(&multimap<KeyType, MappedType, Compare>::ThalliumLocalContainsInServer,
+                              this, std::placeholders::_1, std::placeholders::_2));
 
-                    rpc->bind(func_prefix+"_Put", putFunc);
-                    rpc->bind(func_prefix+"_Get", getFunc);
-                    rpc->bind(func_prefix+"_Erase", eraseFunc);
-                    rpc->bind(func_prefix+"_GetAllData", getAllDataInServerFunc);
-                    rpc->bind(func_prefix+"_Contains", containsInServerFunc);
-                    break;
-                }
+                rpc->bind(func_prefix+"_Put", putFunc);
+                rpc->bind(func_prefix+"_Get", getFunc);
+                rpc->bind(func_prefix+"_Erase", eraseFunc);
+                rpc->bind(func_prefix+"_GetAllData", getAllDataInServerFunc);
+                rpc->bind(func_prefix+"_Contains", containsInServerFunc);
+                break;
+            }
 #endif
+            default:
+                break;
         }
-    }else if (!is_server && server_on_node) {
+    } else if (!is_server && server_on_node) {
         /* Map the clients to their respective memory pools */
         segment = boost::interprocess::managed_mapped_file(
             boost::interprocess::open_only, backed_file.c_str());

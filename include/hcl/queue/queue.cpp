@@ -24,12 +24,19 @@ queue<MappedType>::~queue() {
 }
 template<typename MappedType>
 queue<MappedType>::queue(std::string name_)
-        : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
-          num_servers(HCL_CONF->NUM_SERVERS),
-          comm_size(1), my_rank(0), memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
-          backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
-          name(name_), segment(), my_queue(), func_prefix(name_),
-          server_on_node(HCL_CONF->SERVER_ON_NODE) {
+    : comm_size(1),
+      my_rank(0),
+      num_servers(HCL_CONF->NUM_SERVERS),
+      my_server(HCL_CONF->MY_SERVER),
+      memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
+      is_server(HCL_CONF->IS_SERVER),
+      segment(),
+      name(name_),
+      func_prefix(name_),
+      my_queue(),
+      server_on_node(HCL_CONF->SERVER_ON_NODE),
+      backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)) {
+
     AutoTrace trace = AutoTrace("hcl::queue(local)");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
@@ -75,26 +82,28 @@ queue<MappedType>::queue(std::string name_)
             case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-                {
-                    std::function<void(const tl::request &, MappedType &)> pushFunc(
-                        std::bind(&hcl::queue<MappedType>::ThalliumLocalPush, this,
-                                  std::placeholders::_1, std::placeholders::_2));
-                    std::function<void(const tl::request &)> popFunc(std::bind(
-                        &hcl::queue<MappedType>::ThalliumLocalPop, this, std::placeholders::_1));
-                    std::function<void(const tl::request &)> sizeFunc(std::bind(
-                        &hcl::queue<MappedType>::ThalliumLocalSize, this, std::placeholders::_1));
-                    std::function<void(const tl::request &)> waitForElementFunc(std::bind(
-                        &hcl::queue<MappedType>::ThalliumLocalWaitForElement, this,
-                        std::placeholders::_1));
-                    rpc->bind(func_prefix+"_Push", pushFunc);
-                    rpc->bind(func_prefix+"_Pop", popFunc);
-                    rpc->bind(func_prefix+"_WaitForElement", waitForElementFunc);
-                    rpc->bind(func_prefix+"_Size", sizeFunc);
-                    break;
-                }
+            {
+                std::function<void(const tl::request &, MappedType &)> pushFunc(
+                    std::bind(&hcl::queue<MappedType>::ThalliumLocalPush, this,
+                              std::placeholders::_1, std::placeholders::_2));
+                std::function<void(const tl::request &)> popFunc(
+                    std::bind(&hcl::queue<MappedType>::ThalliumLocalPop, this, std::placeholders::_1));
+                std::function<void(const tl::request &)> sizeFunc(
+                    std::bind(&hcl::queue<MappedType>::ThalliumLocalSize, this, std::placeholders::_1));
+                std::function<void(const tl::request &)> waitForElementFunc(
+                    std::bind(&hcl::queue<MappedType>::ThalliumLocalWaitForElement, this,
+                              std::placeholders::_1));
+                rpc->bind(func_prefix+"_Push", pushFunc);
+                rpc->bind(func_prefix+"_Pop", popFunc);
+                rpc->bind(func_prefix+"_WaitForElement", waitForElementFunc);
+                rpc->bind(func_prefix+"_Size", sizeFunc);
+                break;
+            }
 #endif
+            default:
+                break;
         }
-    }else if (!is_server && server_on_node) {
+    } else if (!is_server && server_on_node) {
         /* Map the clients to their respective memory pools */
         segment = bip::managed_mapped_file(bip::open_only, backed_file.c_str());
         std::pair<Queue*, bip::managed_mapped_file::size_type> res;

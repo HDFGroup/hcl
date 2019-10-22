@@ -31,13 +31,19 @@ map<KeyType, MappedType, Compare>::~map() {
 
 template<typename KeyType, typename MappedType, typename Compare>
 map<KeyType, MappedType, Compare>::map(std::string name_)
-        : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
-          num_servers(HCL_CONF->NUM_SERVERS),
-          comm_size(1), my_rank(0), memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
-          name(name_), segment(), mymap(), func_prefix(name_),
-          backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)),
-          server_on_node(HCL_CONF->SERVER_ON_NODE)
-{
+    : comm_size(1),
+      my_rank(0),
+      num_servers(HCL_CONF->NUM_SERVERS),
+      my_server(HCL_CONF->MY_SERVER),
+      memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
+      is_server(HCL_CONF->IS_SERVER),
+      segment(),
+      name(name_),
+      func_prefix(name_),
+      mymap(),
+      server_on_node(HCL_CONF->SERVER_ON_NODE),
+      backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)) {
+
     AutoTrace trace = AutoTrace("hcl::map");
     /* Initialize MPI rank and size of world */
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);

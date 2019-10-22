@@ -2,7 +2,7 @@
  * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
  *
  * This file is part of HCL
- * 
+ *
  * HCL is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -17,6 +17,7 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
+#include <assert.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -103,7 +104,7 @@ int main (int argc,char* argv[])
     if (debug) {
         printf("%s/%d: %d\n", processor_name, my_rank, getpid());
     }
-    
+
     if(debug && my_rank==0){
         printf("%d ready for attach\n", comm_size);
         fflush(stdout);
@@ -111,7 +112,7 @@ int main (int argc,char* argv[])
     }
     MPI_Barrier(MPI_COMM_WORLD);
     bool is_server=(my_rank+1) % ranks_per_server == 0;
-    int my_server=my_rank / ranks_per_server;
+    size_t my_server=my_rank / ranks_per_server;
     int num_servers=comm_size/ranks_per_server;
 
     // The following is used to switch to 40g network on Ares.
@@ -124,7 +125,7 @@ int main (int argc,char* argv[])
 
     size_t size_of_elem = sizeof(int);
 
-    printf("rank %d, is_server %d, my_server %d, num_servers %d\n",my_rank,is_server,my_server,num_servers);
+    printf("rank %d, is_server %d, my_server %zu, num_servers %d\n",my_rank,is_server,my_server,num_servers);
 
     const int array_size=TEST_REQUEST_SIZE;
 
@@ -134,7 +135,7 @@ int main (int argc,char* argv[])
 
     std::array<int,array_size> my_vals=std::array<int,array_size>();
 
-    
+
     HCL_CONF->IS_SERVER = is_server;
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
@@ -220,6 +221,7 @@ int main (int argc,char* argv[])
             local_get_multimap_timer.resumeTime();
             auto result = multimap->Get(key);
             local_get_multimap_timer.pauseTime();
+            assert(result.first);
         }
 
         double local_get_multimap_throughput=num_request/local_get_multimap_timer.getElapsedTime()*1000*size_of_elem*my_vals.size()/1024/1024;

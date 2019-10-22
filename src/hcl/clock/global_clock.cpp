@@ -31,24 +31,28 @@ global_clock::~global_clock() {
 
 
 global_clock::global_clock(std::string name_)
-        : is_server(HCL_CONF->IS_SERVER), my_server(HCL_CONF->MY_SERVER),
-          num_servers(HCL_CONF->NUM_SERVERS),
-          comm_size(1), my_rank(0), memory_allocated(1024ULL * 1024ULL * 128ULL),
-          name(name_), segment(),
-          func_prefix(name_),
-          backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_),
-          server_on_node(HCL_CONF->SERVER_ON_NODE) {
+    : is_server(HCL_CONF->IS_SERVER),
+      memory_allocated(1024ULL * 1024ULL * 128ULL),
+      my_rank(0),
+      comm_size(1),
+      num_servers(HCL_CONF->NUM_SERVERS),
+      my_server(HCL_CONF->MY_SERVER),
+      segment(),
+      name(name_),
+      func_prefix(name_),
+      server_on_node(HCL_CONF->SERVER_ON_NODE),
+      backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_) {
+
     AutoTrace trace = AutoTrace("hcl::global_clock");
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     name = name+"_"+std::to_string(my_server);
     rpc = Singleton<RPC>::GetInstance();
     if (is_server) {
-                switch (HCL_CONF->RPC_IMPLEMENTATION) {
+        switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
-                std::function<HTime(void)> getTimeFunction(
-                    std::bind(&global_clock::LocalGetTime, this));
+                std::function<HTime(void)> getTimeFunction(std::bind(&global_clock::LocalGetTime, this));
                 rpc->bind(func_prefix+"_GetTime", getTimeFunction);
                 break;
             }
@@ -60,14 +64,15 @@ global_clock::global_clock(std::string name_)
             case THALLIUM_ROCE:
 #endif
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-                {
-                    std::function<void(const tl::request &)> getTimeFunction(
-                        std::bind(&global_clock::ThalliumLocalGetTime, this,
-                                  std::placeholders::_1));
-                    rpc->bind(func_prefix+"_GetTime", getTimeFunction);
-                    break;
-                }
+            {
+                std::function<void(const tl::request &)> getTimeFunction(
+                    std::bind(&global_clock::ThalliumLocalGetTime, this, std::placeholders::_1));
+                rpc->bind(func_prefix+"_GetTime", getTimeFunction);
+                break;
+            }
 #endif
+            default:
+                break;
         }
 
         bip::file_mapping::remove(backed_file.c_str());
