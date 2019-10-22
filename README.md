@@ -1,5 +1,7 @@
 # HCL: Hermes Container Library
 
+[![Build Status](https://travis-ci.org/HDFGroup/hcl.svg?branch=dev)](https://travis-ci.org/HDFGroup/hcl)
+
 HCL is a distributed data structure library. It consists of the following
 templated data structures:
 
