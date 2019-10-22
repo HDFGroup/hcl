@@ -32,19 +32,15 @@
 #ifndef INCLUDE_HCL_COMMON_DATA_STRUCTURES_H_
 #define INCLUDE_HCL_COMMON_DATA_STRUCTURES_H_
 
-#include <boost/interprocess/containers/string.hpp>
-#include <boost/interprocess/containers/vector.hpp>
-
 #ifdef HCL_ENABLE_RPCLIB
 #include <rpc/msgpack.hpp>
 #endif
 
+#include <string.h>
 #include <string>
 #include <vector>
 #include <cstdint>
 #include <chrono>
-
-namespace bip = boost::interprocess;
 
 typedef struct CharStruct {
   private:

@@ -20,15 +20,11 @@
 
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <functional>
-#include <utility>
-#include <mpi.h>
-#include <iostream>
-#include <signal.h>
-#include <execinfo.h>
 #include <chrono>
 #include <unordered_map>
+
+#include <mpi.h>
+
 #include <hcl/common/data_structures.h>
 #include <hcl/unordered_map/unordered_map.h>
 

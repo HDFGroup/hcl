@@ -19,15 +19,11 @@
  */
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <functional>
-#include <utility>
-#include <mpi.h>
-#include <iostream>
-#include <signal.h>
-#include <execinfo.h>
 #include <chrono>
 #include <set>
+
+#include <mpi.h>
+
 #include <hcl/common/data_structures.h>
 #include <hcl/set/set.h>
 

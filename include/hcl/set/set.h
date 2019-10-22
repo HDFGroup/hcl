@@ -46,7 +46,6 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
-#include <boost/algorithm/string.hpp>
 /** Standard C++ Headers**/
 #include <cstdlib>
 #include <iostream>
