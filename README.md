@@ -19,10 +19,10 @@ hybrid data model of shared memory and RPC. It supports decoupled and ephemeral
 deployment models, with deployment configured based on application requirements.
 It's primary goals are to provide
 
-* An STL-like interface
-* A Flexible programming paradigm (MPI or Map-Reduce)
-* An Optimized for Hight Performance (through hybrid data access model)
-* Utilization of new hardware and software innovations (e.g., one-sided communications)
+* a familiar STL-like interface
+* a flexible programming paradigm
+* a hybrid data access model optimized for High-Performance Computing (HPC)
+* a high-performance data container infrastructure that leverages new hardware and software innovations (e.g., RDMA, RoCE, one-sided communications)
 
 HCL consists of the following templated data structures:
 
