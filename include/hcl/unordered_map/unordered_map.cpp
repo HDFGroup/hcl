@@ -98,12 +98,17 @@ unordered_map<KeyType, MappedType>::unordered_map(CharStruct name_)
               std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalPut, this,
                         std::placeholders::_1, std::placeholders::_2,
                         std::placeholders::_3));
-          // std::function<void(const tl::request &, tl::bulk &, KeyType &)> putFunc(
-          //     std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalPut, this,
-          //               std::placeholders::_1, std::placeholders::_2,
-          //               std::placeholders::_3));
           std::function<void(const tl::request &, KeyType &)> getFunc(
               std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalGet, this,
+                        std::placeholders::_1, std::placeholders::_2));
+          std::function<void(const tl::request &, tl::bulk &, KeyType &)> bulkPutFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::ThalliumBulkPut, this,
+                        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+          std::function<void(const tl::request &, tl::bulk &, KeyType &)> bulkGetFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::ThalliumBulkGet, this,
+                        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+          std::function<void(const tl::request &, KeyType &)> getBulkSizeFunc(
+              std::bind(&unordered_map<KeyType, MappedType>::ThalliumGetBulkSize, this,
                         std::placeholders::_1, std::placeholders::_2));
           std::function<void(const tl::request &, KeyType &)> eraseFunc(
               std::bind(&unordered_map<KeyType, MappedType>::ThalliumLocalErase, this,
@@ -114,6 +119,9 @@ unordered_map<KeyType, MappedType>::unordered_map(CharStruct name_)
 
           rpc->bind(func_prefix+"_Put", putFunc);
           rpc->bind(func_prefix+"_Get", getFunc);
+          rpc->bind(func_prefix+"_BulkPut", bulkPutFunc);
+          rpc->bind(func_prefix+"_BulkGet", bulkGetFunc);
+          rpc->bind(func_prefix+"_GetBulkSize", getBulkSizeFunc);
           rpc->bind(func_prefix+"_Erase", eraseFunc);
           rpc->bind(func_prefix+"_GetAllData", getAllDataInServerFunc);
           break;
@@ -496,4 +504,91 @@ unordered_map<KeyType, MappedType>::GetAllDataInServerWithCallback(std::string c
         return RPC_CALL_WRAPPER_CB(c_name, my_server_i, ret, cb_name);
     }
 }
+
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+template<typename KeyType, typename MappedType>
+size_t unordered_map<KeyType, MappedType>::GetBulkSize(KeyType &key) {
+    auto response = LocalGet(key);
+    // Serialize result into a buffer_output_archive in order to get the total, serialized size
+    tl::buffer buf;
+    tl::buffer_output_archive archive(buf);
+    archive & response;
+    size_t result = buf.size();
+
+    return result;
+}
+
+template<typename KeyType, typename MappedType>
+bool unordered_map<KeyType, MappedType>::BulkPut(KeyType &key, MappedType &val) {
+    uint16_t server_key = (uint16_t)keyHash(key) % num_servers;
+    if (server_key == my_server && server_on_node) {
+        return LocalPut(key, val);
+    }
+    else {
+        return rpc->bulk_call_put<tl::packed_response, KeyType, MappedType>(server_key,
+                                                                            func_prefix + "_BulkPut",
+                                                                            key,
+                                                                            val).template as<bool>();
+    }
+}
+
+template<typename KeyType, typename MappedType>
+std::pair<bool, MappedType> unordered_map<KeyType, MappedType>::BulkGet(KeyType &key) {
+    size_t key_hash = keyHash(key);
+    uint16_t server_key = static_cast<uint16_t>(key_hash % num_servers);
+    if (server_key == my_server && server_on_node) {
+        return LocalGet(key);
+    } else {
+        // First make a call to get the size of the serialized buffer
+        size_t buf_size = rpc->call<tl::packed_response>(server_key,
+                                                         func_prefix + "_GetBulkSize",
+                                                         key).template as<size_t>();
+        return rpc->bulk_call_get<std::pair<bool, MappedType>, KeyType>(server_key,
+                                                                        func_prefix + "_BulkGet",
+                                                                        key,
+                                                                        buf_size);
+    }
+}
+
+template<typename KeyType, typename MappedType>
+void unordered_map<KeyType, MappedType>::ThalliumBulkPut(const tl::request &thallium_req, tl::bulk &bulk_handle,
+                                                         KeyType &key) {
+    tl::buffer buf(bulk_handle.size());
+    std::vector<std::pair<void*, std::size_t>> segments(1);
+    segments[0].first  = buf.data();
+    segments[0].second = buf.size();
+    auto engine = rpc->get_engine();
+    tl::bulk local = engine->expose(segments, tl::bulk_mode::write_only);
+    tl::endpoint ep = thallium_req.get_endpoint();
+    bulk_handle.on(ep) >> local;
+
+    // Deserialize buffer contents into val
+    tl::buffer_input_archive archive(buf);
+    MappedType val;
+    archive & val;
+
+    thallium_req.respond(LocalPut(key, val));
+}
+
+template<typename KeyType, typename MappedType>
+void unordered_map<KeyType, MappedType>::ThalliumBulkGet(const tl::request &thallium_req, tl::bulk &bulk_handle,
+                                                         KeyType &key) {
+    auto result = LocalGet(key);
+
+    // Serialize result into a buffer_output_archive
+    tl::buffer buf;
+    tl::buffer_output_archive archive(buf);
+    archive & result;
+
+    std::vector<std::pair<void*, std::size_t>> segments(1);
+    segments[0].first  = buf.data();
+    segments[0].second = buf.size();
+    auto engine = rpc->get_engine();
+    tl::bulk local = engine->expose(segments, tl::bulk_mode::read_only);
+    tl::endpoint ep = thallium_req.get_endpoint();
+    local >> bulk_handle.on(ep);
+
+    thallium_req.respond(result.first);
+}
+#endif
 #endif  // INCLUDE_HCL_UNORDERED_MAP_UNORDERED_MAP_CPP_

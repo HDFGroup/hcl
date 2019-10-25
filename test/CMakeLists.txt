@@ -1,7 +1,8 @@
-# target_link_libraries(DistributedHashMapTest ${CMAKE_BINARY_DIR}/libhcl.so)
-
 set(examples unordered_map_test map_test queue_test priority_queue_test multimap_test set_test)
-# global_clock_test global_sequence_test
+
+if(HCL_ENABLE_THALLIUM_ROCE OR HCL_ENABLE_THALLIUM_TCP)
+  list(APPEND examples thallium_bulk_test)
+endif()
 
 add_custom_target(copy_hostfile)
 add_custom_command(
@@ -24,6 +25,7 @@ foreach (example ${examples})
     add_dependencies(${example} copy_hostfile)
     add_dependencies(${example} copy_server_list)
     set_target_properties(${example} PROPERTIES ENVIRONMENT LD_PRELOAD=${CMAKE_BINARY_DIR}/libhcl.so)
+    target_include_directories(${example} PRIVATE ".")
     target_compile_options(${example} PRIVATE -Wall -Wextra)
     target_link_libraries(${example} ${PROJECT_NAME})
     set_target_properties (${example} PROPERTIES FOLDER test)

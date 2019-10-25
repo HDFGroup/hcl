@@ -5,8 +5,12 @@
 #ifndef HCL_UTIL_H
 #define HCL_UTIL_H
 
-#include <boost/interprocess/containers/string.hpp>
+#include <execinfo.h>
+#include <signal.h>
 #include <stdlib.h>
+#include <string>
+#include <mpi.h>
+#include <boost/interprocess/containers/string.hpp>
 
 namespace bip=boost::interprocess;
 
@@ -14,9 +18,9 @@ struct KeyType{
     size_t a;
     KeyType():a(0){}
     KeyType(size_t a_):a(a_){}
-
+#if defined(HCL_ENABLE_RPCLIB)
     MSGPACK_DEFINE(a);
-
+#endif
     /* equal operator for comparing two Matrix. */
     bool operator==(const KeyType &o) const {
         return a == o.a;
@@ -31,11 +35,13 @@ struct KeyType{
     bool Contains(const KeyType &o) const {
         return a==o.a;
     }
-    
+
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
   template<typename A>
     void serialize(A& ar) const {
         ar & a;
     }
+#endif
 };
 
 // 1,4,16,1000,4000,16000,250000,1000000,4000000,16000000
@@ -61,8 +67,9 @@ struct MappedType{
         // }
     }
 
+#if defined(HCL_ENABLE_RPCLIB)
     MSGPACK_DEFINE(a);
-
+#endif
     /* equal operator for comparing two Matrix. */
     bool operator==(const MappedType &o) const {
         if (a == o.a) {
@@ -98,7 +105,7 @@ struct MappedType{
     //     }
     //     return true;
     // }
-    
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
   template<typename A>
   void serialize(A& ar) const {
       ar & a;
@@ -106,7 +113,9 @@ struct MappedType{
       //     ar & a[i];
       // }
   }
+#endif
 };
+
 const int MAX = 26;
 std::string printRandomString(int n)
 {
@@ -180,5 +189,32 @@ void SetSignal(){
     sigaction(SIGSEGV, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
     sigaction(SIGABRT, &sa, NULL);
+}
+
+struct MpiData {
+    int comm_size;
+    int rank;
+    std::string processor_name;
+};
+
+MpiData initMpiData(int *argc, char*** argv) {
+
+    MpiData result = {};
+
+    int provided;
+    MPI_Init_thread(argc, argv, MPI_THREAD_MULTIPLE, &provided);
+    if (provided < MPI_THREAD_MULTIPLE) {
+        fprintf(stderr, "Didn't receive appropriate MPI threading specification\n");
+        exit(EXIT_FAILURE);
+    }
+    MPI_Comm_size(MPI_COMM_WORLD, &result.comm_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &result.rank);
+
+    int len;
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    MPI_Get_processor_name(processor_name, &len);
+    result.processor_name = std::string(processor_name);
+
+    return result;
 }
 #endif //HCL_UTIL_H

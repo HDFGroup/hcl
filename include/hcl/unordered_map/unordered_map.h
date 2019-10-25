@@ -124,23 +124,15 @@ class unordered_map {
     std::vector<std::pair<KeyType, MappedType>> LocalGetAllDataInServer();
 
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+    bool BulkPut(KeyType &key, MappedType &val);
+    std::pair<bool, MappedType> BulkGet(KeyType &key);
+    size_t GetBulkSize(KeyType &key);
+
+    void ThalliumBulkPut(const tl::request &thallium_req, tl::bulk &bulk_handle, KeyType &key);
+    void ThalliumBulkGet(const tl::request &thallium_req, tl::bulk &bulk_handle, KeyType &key);
+
+    THALLIUM_DEFINE(GetBulkSize, (key), KeyType &key)
     THALLIUM_DEFINE(LocalPut, (key,data) ,KeyType &key, MappedType &data)
-
-    // void ThalliumLocalPut(const tl::request &thallium_req, tl::bulk &bulk_handle, KeyType key) {
-    //     MappedType data = rpc->prep_rdma_server<MappedType>(thallium_req.get_endpoint(), bulk_handle);
-    //     thallium_req.respond(LocalPut(key, data));
-    // }
-
-    // void ThalliumLocalGet(const tl::request &thallium_req, KeyType key) {
-    //     auto retpair = LocalGet(key);
-    //     if (!retpair.first) {
-    //         printf("error\n");
-    //     }
-    //     MappedType data = retpair.second;
-    //     tl::bulk bulk_handle = rpc->prep_rdma_client<MappedType>(data);
-    //     thallium_req.respond(bulk_handle);
-    // }
-
     THALLIUM_DEFINE(LocalGet, (key), KeyType &key)
     THALLIUM_DEFINE(LocalErase, (key), KeyType &key)
     THALLIUM_DEFINE1(LocalGetAllDataInServer)

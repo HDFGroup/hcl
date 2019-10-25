@@ -119,13 +119,22 @@ private:
 
     void run(size_t workers = RPC_THREADS);
 
-#ifdef HCL_ENABLE_THALLIUM_ROCE
+#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+    std::shared_ptr<tl::engine> get_engine();
+
+    template <typename Response, typename KeyType, typename ValueType>
+    Response bulk_call_put(uint16_t server_index, CharStruct const &func_name, KeyType &key, ValueType &val);
+
+    template <typename Response, typename KeyType>
+    Response bulk_call_get(uint16_t server_index, CharStruct const &func_name, KeyType &key, size_t size);
+
     template<typename MappedType>
     MappedType prep_rdma_server(tl::endpoint endpoint, tl::bulk &bulk_handle);
 
     template<typename MappedType>
     tl::bulk prep_rdma_client(MappedType &data);
 #endif
+
     /**
      * Response should be RPCLIB_MSGPACK::object_handle for rpclib and
      * tl::packed_response for thallium/mercury

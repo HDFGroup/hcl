@@ -109,6 +109,12 @@ Response RPC::call(uint16_t server_index,
                    Args... args) {
     AutoTrace trace = AutoTrace("RPC::call", server_index, func_name);
 
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+    const char *thallium_protocol = HCL_CONF->RPC_IMPLEMENTATION == THALLIUM_TCP ?
+        HCL_CONF->TCP_CONF.c_str() :
+        HCL_CONF->VERBS_CONF.c_str();
+#endif
+
     switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
         case RPCLIB: {
@@ -118,41 +124,19 @@ Response RPC::call(uint16_t server_index,
             break;
         }
 #endif
-#ifdef HCL_ENABLE_THALLIUM_TCP
-        case THALLIUM_TCP: {
-            std::shared_ptr<tl::engine> thallium_client;
-            if (HCL_CONF->IS_SERVER) {
-                thallium_client = std::make_shared<tl::engine>(HCL_CONF->TCP_CONF.c_str(), MARGO_CLIENT_MODE);
-            }
-            else {
-                thallium_client = thallium_engine;
-            }
-
-            tl::remote_procedure remote_procedure = thallium_client->define(func_name.c_str());
-            // Setup args for RDMA bulk transfer
-            // std::vector<std::pair<void*,std::size_t>> segments(num_args);
-
-            return remote_procedure.on(thallium_endpoints[server_index])(std::forward<Args>(args)...);
-            break;
-        }
-#endif
-#ifdef HCL_ENABLE_THALLIUM_ROCE
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+        case THALLIUM_TCP:
+            [[fallthrough]];
         case THALLIUM_ROCE: {
             std::shared_ptr<tl::engine> thallium_client;
             if (HCL_CONF->IS_SERVER) {
-                thallium_client = std::make_shared<tl::engine>(HCL_CONF->VERBS_CONF.c_str(), MARGO_CLIENT_MODE);
+                thallium_client = std::make_shared<tl::engine>(thallium_protocol, THALLIUM_CLIENT_MODE);
             }
             else {
                 thallium_client = thallium_engine;
             }
 
             tl::remote_procedure remote_procedure = thallium_client->define(func_name.c_str());
-
-            // Setup args for RDMA bulk transfer
-            // std::vector<std::pair<void*,std::size_t>> segments(num_args);
-            // tl::bulk bulk_handle = remote_procedure.on(server_endpoint)(std::forward<Args>(args)...);
-            // return std::make_pair(lookup_str, bulk_handle);
-
             return remote_procedure.on(thallium_endpoints[server_index])(std::forward<Args>(args)...);
             break;
         }
@@ -161,7 +145,6 @@ Response RPC::call(uint16_t server_index,
             break;
     }
 }
-
 
 template <typename Response, typename... Args>
 std::future<Response> RPC::async_call(uint16_t server_index,
@@ -195,8 +178,70 @@ std::future<Response> RPC::async_call(uint16_t server_index,
     }
 }
 
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+template <typename Response, typename KeyType, typename ValueType>
+Response RPC::bulk_call_put(uint16_t server_index, CharStruct const &func_name, KeyType &key, ValueType &val) {
+    AutoTrace trace = AutoTrace("RPC::bulk_call_put", server_index, func_name);
+    int16_t port = server_port + server_index;
 
-#ifdef HCL_ENABLE_THALLIUM_ROCE
+    const char *thallium_protocol = HCL_CONF->RPC_IMPLEMENTATION == THALLIUM_TCP ?
+        HCL_CONF->TCP_CONF.c_str() :
+        HCL_CONF->VERBS_CONF.c_str();
+    std::shared_ptr<tl::engine> thallium_client;
+    if (HCL_CONF->IS_SERVER) {
+        thallium_client = std::make_shared<tl::engine>(thallium_protocol, THALLIUM_CLIENT_MODE);
+    }
+    else {
+        thallium_client = thallium_engine;
+    }
+
+    tl::remote_procedure remote_procedure = thallium_client->define(func_name.c_str());
+
+    // Serialize val into a buffer_output_archive
+    tl::buffer buf;
+    tl::buffer_output_archive archive(buf);
+    archive & val;
+
+    std::vector<std::pair<void*, std::size_t>> segments(1);
+    segments[0].first  = buf.data();
+    segments[0].second = buf.size();
+    tl::bulk bulk = thallium_client->expose(segments, tl::bulk_mode::read_only);
+    return remote_procedure.on(thallium_endpoints[server_index])(bulk, key);
+}
+
+template <typename Response, typename KeyType>
+Response RPC::bulk_call_get(uint16_t server_index, CharStruct const &func_name, KeyType &key, size_t buf_size) {
+    AutoTrace trace = AutoTrace("RPC::bulk_call_get", server_index, func_name);
+    int16_t port = server_port + server_index;
+
+    const char *thallium_protocol = HCL_CONF->RPC_IMPLEMENTATION == THALLIUM_TCP
+        ? HCL_CONF->TCP_CONF.c_str()
+        : HCL_CONF->VERBS_CONF.c_str();
+    std::shared_ptr<tl::engine> thallium_client;
+    if (HCL_CONF->IS_SERVER) {
+        thallium_client = std::make_shared<tl::engine>(thallium_protocol, THALLIUM_CLIENT_MODE);
+    }
+    else {
+        thallium_client = thallium_engine;
+    }
+
+    tl::remote_procedure remote_procedure = thallium_client->define(func_name.c_str());
+
+    tl::buffer buf(buf_size);
+    std::vector<std::pair<void*, std::size_t>> segments(1);
+    segments[0].first  = buf.data();
+    segments[0].second = buf.size();
+    tl::bulk bulk = thallium_client->expose(segments, tl::bulk_mode::write_only);
+    bool success = remote_procedure.on(thallium_endpoints[server_index])(bulk, key).template as<bool>();
+
+    // Deserialize result
+    tl::buffer_input_archive in_archive(buf);
+    Response result;
+    in_archive & result;
+
+    return result;
+}
+
 // These are still experimental for using RDMA bulk transfers
 template<typename MappedType>
 MappedType RPC::prep_rdma_server(tl::endpoint endpoint, tl::bulk &bulk_handle) {
@@ -220,5 +265,4 @@ tl::bulk RPC::prep_rdma_client(MappedType &data) {
     return thallium_engine->expose(segments, tl::bulk_mode::read_only);
 }
 #endif
-
 #endif  // INCLUDE_HCL_COMMUNICATION_RPC_LIB_CPP_
