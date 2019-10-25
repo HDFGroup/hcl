@@ -119,7 +119,7 @@ private:
 
     void run(size_t workers = RPC_THREADS);
 
-#if defined(BASKET_ENABLE_THALLIUM_TCP) || defined(BASKET_ENABLE_THALLIUM_ROCE)
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
     std::shared_ptr<tl::engine> get_engine();
 
     template <typename Response, typename KeyType, typename ValueType>
