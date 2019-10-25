@@ -122,3 +122,5 @@ hcl::unordered_map(std::string name);
 ```
 
  * `name`: A unique name used to identify the shared memory.
+
+See the [wiki](https://github.com/HDFGroup/hcl/wiki) for more information.
