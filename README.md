@@ -2,8 +2,29 @@
 
 [![Build Status](https://travis-ci.org/HDFGroup/hcl.svg?branch=dev)](https://travis-ci.org/HDFGroup/hcl)
 
-HCL is a distributed data structure library. It consists of the following
-templated data structures:
+In order to keep up with the demand for high performance at extreme-scale,
+applications have become very highly distributed. Distributed applications
+typically require global coordination for distributed algorithms such as stencil
+computations, collective I/O, tridiagonal systems, etc. This coordination is
+achieved using mechanisms such as inter-process communication, global
+distributed coordinators, or leader election. These coordination mechanisms
+require storing state information for consistent global access by multiple
+processes via distributed data structure platforms. In order to facilitate the
+coordination of applications at extreme-scale, we propose Hermes Container
+Library (HCL), a user-space platform for distributing data structures. HCL
+provides wrappers for C++ Standard Library (STL) containers, which it
+distributes and manages transparently across nodes. HCL has been designed to be
+easy-to-use, highly programmable, and portable. Data access is optimized via a
+hybrid data model of shared memory and RPC. It supports decoupled and ephemeral
+deployment models, with deployment configured based on application requirements.
+It's primary goals are to provide
+
+* An STL-like interface
+* A Flexible programming paradigm (MPI or Map-Reduce)
+* An Optimized for Hight Performance (through hybrid data access model)
+* Utilization of new hardware and software innovations (e.g., one-sided communications)
+
+HCL consists of the following templated data structures:
 
  * global_clock
  * map
