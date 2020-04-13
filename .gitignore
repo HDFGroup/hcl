@@ -29,3 +29,8 @@ cmake-build-debug/libhcl.so.1
 cmake-build-debug/libhcl.so.1.0.0
 # Project exclude paths
 /cmake-build-debug/
+
+GPATH
+GRTAGS
+GTAGS
+

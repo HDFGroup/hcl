@@ -1,5 +1,8 @@
 # target_link_libraries(DistributedHashMapTest ${CMAKE_BINARY_DIR}/libhcl.so)
 
+find_package(MPI REQUIRED COMPONENTS CXX)
+message(STATUS "found mpi.h at ${MPI_CXX_INCLUDE_DIRS}")
+
 set(examples unordered_map_test map_test queue_test priority_queue_test multimap_test set_test)
 # global_clock_test global_sequence_test
 
@@ -25,7 +28,7 @@ foreach (example ${examples})
     add_dependencies(${example} copy_server_list)
     set_target_properties(${example} PROPERTIES ENVIRONMENT LD_PRELOAD=${CMAKE_BINARY_DIR}/libhcl.so)
     target_compile_options(${example} PRIVATE -Wall -Wextra)
-    target_link_libraries(${example} ${PROJECT_NAME})
+    target_link_libraries(${example} ${PROJECT_NAME} MPI::MPI_CXX)
     set_target_properties (${example} PROPERTIES FOLDER test)
 endforeach()
 
