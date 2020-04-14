@@ -11,6 +11,18 @@ option(HCL_ENABLE_THALLIUM_ROCE "allow hcl to use RPCLIB" OFF)
 option(HCL_TIMER "Show timing information of library calls." OFF)
 option(HCL_TRACE "Show traces of library calls." OFF)
 
+if(NOT HCL_INSTALL_DATA_DIR)
+    set(HCL_INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX}/share)
+endif()
+
+if(NOT HCL_INSTALL_LIB_DIR)
+  set(HCL_INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+endif()
+
+if(NOT HCL_EXPORTED_TARGETS)
+    set(HCL_EXPORTED_TARGETS "hcl-targets")
+endif()
+
 if(HCL_ENABLE_RPCLIB)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHCL_ENABLE_RPCLIB")
     message("HCL_ENABLE_RPCLIB: ${HCL_ENABLE_RPCLIB}")
@@ -73,27 +85,67 @@ set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
 configure_file(hcl.pc.in hcl.pc @ONLY)
 
+if(NOT APPLE)
+  find_library(LIBRT rt)
+  if(NOT LIBRT)
+    message(FATAL_ERROR "librt is required for POSIX shared memory")
+  endif()
+endif()
+
+find_library(LIBPTHREAD pthread)
+
+target_link_libraries(${PROJECT_NAME} ${LIBRT} ${LIBPTHREAD})
+
 if(HCL_ENABLE_RPCLIB)
     set(RPC_LIB_FLAGS -lrpc ${RPC_LIB_FLAGS})
+    target_link_libraries(${PROJECT_NAME} ${RPC_LIB_FLAGS})
 endif()
+
 if(HCL_ENABLE_THALLIUM_ROCE OR HCL_ENABLE_THALLIUM_TCP)
-    set(RPC_LIB_FLAGS -lthallium -lmercury -lmercury_util -lmargo -labt ${RPC_LIB_FLAGS})
+    find_package(thallium CONFIG REQUIRED)
+    if(thallium_FOUND)
+        message(STATUS "found thallium at ${thallium_DIR}")
+        target_link_libraries(${PROJECT_NAME} thallium)
+    endif()
 endif()
 
-set(LIB_FLAGS ${RPC_LIB_FLAGS} -lmpi -lpthread -lrt)
+include(CMakePackageConfigHelpers)
 
-target_link_libraries(${PROJECT_NAME} ${LIB_FLAGS})
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/CMake/hcl-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/hcl-config.cmake
+    INSTALL_DESTINATION ${HCL_INSTALL_DATA_DIR}/cmake/hcl
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/hcl-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/hcl-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/hcl-config-version.cmake
+    DESTINATION ${HCL_INSTALL_DATA_DIR}/cmake/hcl
+)
 
 install(TARGETS ${PROJECT_NAME}
+    EXPORT ${HCL_EXPORTED_TARGETS}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
-if (DEFINED ENV{PKG_CONFIG_PATH})
+install(EXPORT ${HCL_EXPORTED_TARGETS}
+    DESTINATION ${HCL_INSTALL_DATA_DIR}/cmake/hcl
+    FILE ${HCL_EXPORTED_TARGETS}.cmake
+)
+
+if (DEFINED ENV{PKG_CONFIG_PATH} AND NOT "$ENV{PKG_CONFIG_PATH}" STREQUAL "")
    install(FILES ${CMAKE_BINARY_DIR}/hcl.pc
                   DESTINATION $ENV{PKG_CONFIG_PATH}/pkgconfig)
 else()
    install(FILES ${CMAKE_BINARY_DIR}/hcl.pc
-                  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+                  DESTINATION ${HCL_INSTALL_LIB_DIR}/pkgconfig)
 endif()
 
 option(BUILD_TEST "Build the unit tests" ON)
