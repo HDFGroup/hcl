@@ -141,11 +141,13 @@ install(EXPORT ${HCL_EXPORTED_TARGETS}
 )
 
 if (DEFINED ENV{PKG_CONFIG_PATH})
+  message(STATUS "PKG_CONFIG_PATH is set" )
    install(FILES ${CMAKE_BINARY_DIR}/hcl.pc
                   DESTINATION $ENV{PKG_CONFIG_PATH}/pkgconfig)
 else()
    install(FILES ${CMAKE_BINARY_DIR}/hcl.pc
                   DESTINATION ${HCL_INSTALL_LIB_DIR}/pkgconfig)
+                message(STATUS "PKG_CONFIG_PATH is not set" )
 endif()
 
 option(BUILD_TEST "Build the unit tests" ON)
