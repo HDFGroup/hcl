@@ -15,6 +15,10 @@ if(NOT HCL_INSTALL_DATA_DIR)
     set(HCL_INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX}/share)
 endif()
 
+if(NOT HCL_INSTALL_LIB_DIR)
+  set(HCL_INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+endif()
+
 if(NOT HCL_EXPORTED_TARGETS)
     set(HCL_EXPORTED_TARGETS "hcl-targets")
 endif()
@@ -141,7 +145,7 @@ if (DEFINED ENV{PKG_CONFIG_PATH})
                   DESTINATION $ENV{PKG_CONFIG_PATH}/pkgconfig)
 else()
    install(FILES ${CMAKE_BINARY_DIR}/hcl.pc
-                  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+                  DESTINATION ${HCL_INSTALL_LIB_DIR}/pkgconfig)
 endif()
 
 option(BUILD_TEST "Build the unit tests" ON)
