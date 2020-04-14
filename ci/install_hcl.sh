@@ -4,6 +4,8 @@ LOCAL=${HOME}/local
 mkdir build
 pushd build
 
+unset PKG_CONFIG_PATH
+
 CXXFLAGS="-I${LOCAL}/include -fsanitize=address -O1 -fno-omit-frame-pointer -g" \
 LDFLAGS="-L${LOCAL}/lib"                                       \
     cmake                                                      \
