@@ -201,13 +201,13 @@ int main (int argc,char* argv[])
     hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString> *map;
     if (is_server) {
         map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
+        map->SetIsDynamic(true);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     if (!is_server) {
         map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
     }
 
-    CharAllocator charallocator(map->segment.get_segment_manager());
     std::string shared_vals(size_of_request,'x');
     bip::string private_vals(size_of_request,'x');
     std::unordered_map<KeyType,bip::string> lmap=std::unordered_map<KeyType,bip::string>();

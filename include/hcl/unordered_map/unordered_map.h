@@ -98,6 +98,10 @@ class unordered_map {
 
     ~unordered_map();
 
+    void SetIsDynamic(bool is_dynamic_){
+        is_dynamic=is_dynamic_;
+    }
+
     explicit unordered_map(CharStruct name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
                            "_TEST_UNORDERED_MAP", bool is_dynamic=false);
 
