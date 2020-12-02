@@ -37,9 +37,6 @@
 /** Thallium Headers **/
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 #include <thallium.hpp>
-#include <thallium/serialization/serialize.hpp>
-#include <thallium/serialization/buffer_input_archive.hpp>
-#include <thallium/serialization/buffer_output_archive.hpp>
 #include <thallium/serialization/stl/array.hpp>
 #include <thallium/serialization/stl/complex.hpp>
 #include <thallium/serialization/stl/deque.hpp>

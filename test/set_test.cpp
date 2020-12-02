@@ -57,13 +57,15 @@ struct KeyType{
     bool Contains(const KeyType &o) const {
         return a==o.a;
     }
-#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-    template<typename A>
-    void serialize(A& ar) const {
-        ar & a;
-    }
-#endif
+
 };
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+
+template<typename A>
+void serialize(A &ar, KeyType &a) {
+    ar & a.a;
+}
+#endif
 namespace std {
     template<>
     struct hash<KeyType> {
