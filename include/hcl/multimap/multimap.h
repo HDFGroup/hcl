@@ -62,7 +62,7 @@ namespace hcl {
  * @tparam MappedType, the value of the MultiMap
  */
 template<typename KeyType, typename MappedType, typename Compare =
-         std::less<KeyType>>
+         std::less<KeyType>,class Allocator=nullptr_t ,class SharedType=nullptr_t>
 class multimap {
   private:
     std::hash<KeyType> keyHash;
@@ -92,7 +92,20 @@ class multimap {
 
     explicit multimap(std::string name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
                       "_TEST_MULTIMAP");
+    template<typename A=Allocator>
+    typename std::enable_if_t<std::is_same<A, nullptr_t>::value,MappedType>
+    GetData(MappedType & data){
+        return data;
+    }
 
+    template<typename A=Allocator>
+    typename std::enable_if_t<! std::is_same<A, nullptr_t>::value,SharedType>
+    GetData(MappedType & data){
+        Allocator allocator(segment.get_segment_manager());
+        SharedType value(allocator);
+        value = data;
+        return value;
+    }
     bool LocalPut(KeyType &key, MappedType &data);
     std::pair<bool, MappedType> LocalGet(KeyType &key);
     std::pair<bool, MappedType> LocalErase(KeyType &key);

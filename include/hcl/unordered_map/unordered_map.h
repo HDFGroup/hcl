@@ -68,7 +68,7 @@ namespace hcl {
  *
  * @tparam MappedType, the value of the HashMap
  */
-template<typename KeyType, typename MappedType, class Allocator=std::nullptr_t,class SharedType=std::nullptr_t>
+template<typename KeyType, typename MappedType, class Allocator=nullptr_t ,class SharedType=nullptr_t>
 class unordered_map {
   private:
     std::hash<KeyType> keyHash;
@@ -92,24 +92,27 @@ class unordered_map {
     bool server_on_node;
     std::unordered_map<CharStruct, void*> binding_map;
     CharStruct backed_file;
-    bool is_dynamic;
   public:
     boost::interprocess::managed_mapped_file segment;
 
     ~unordered_map();
+    explicit unordered_map(CharStruct name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
+                           "_TEST_UNORDERED_MAP");
 
-    void SetIsDynamic(bool is_dynamic_){
-        is_dynamic=is_dynamic_;
+    template<typename A=Allocator>
+    typename std::enable_if_t<std::is_same<A, nullptr_t>::value,MappedType>
+    GetData(MappedType & data){
+        return data;
     }
 
-    explicit unordered_map(CharStruct name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
-                           "_TEST_UNORDERED_MAP", bool is_dynamic=false);
-
-   /* template <typename F>
-    void Bind(std::string rpc_name, F fun);*/
-
-   template<typename CF, typename ReturnType,typename... ArgsType>
-   void Bind(CharStruct rpc_name, std::function<ReturnType(ArgsType...)> callback_func, CharStruct caller_func_name, CF caller_func);
+    template<typename A=Allocator>
+    typename std::enable_if_t<! std::is_same<A, nullptr_t>::value,SharedType>
+    GetData(MappedType & data){
+        Allocator allocator(segment.get_segment_manager());
+        SharedType value(allocator);
+        value = data;
+        return value;
+    }
 
    template<typename ReturnType,typename... CB_Tuple_Args>
    ReturnType Call(CharStruct cb_name, CB_Tuple_Args... cb_args){

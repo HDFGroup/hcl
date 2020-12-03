@@ -201,7 +201,6 @@ int main (int argc,char* argv[])
     hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString> *map;
     if (is_server) {
         map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
-        map->SetIsDynamic(true);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     if (!is_server) {

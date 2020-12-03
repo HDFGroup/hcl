@@ -31,9 +31,8 @@ unordered_map<KeyType, MappedType,Allocator,SharedType>::~unordered_map() {
 }
 
 template<typename KeyType, typename MappedType, typename Allocator, typename SharedType>
-unordered_map<KeyType, MappedType, Allocator, SharedType>::unordered_map(CharStruct name_,bool is_dynamic_)
+unordered_map<KeyType, MappedType, Allocator, SharedType>::unordered_map(CharStruct name_)
     : num_servers(HCL_CONF->NUM_SERVERS),
-      is_dynamic(is_dynamic_),
       my_server(HCL_CONF->MY_SERVER),
       memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
       is_server(HCL_CONF->IS_SERVER),
@@ -145,13 +144,8 @@ template<typename KeyType, typename MappedType,typename Allocator, typename Shar
 bool unordered_map<KeyType, MappedType,Allocator,SharedType>::LocalPut(KeyType &key,
                                                   MappedType &data) {
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>lock(*mutex);
-    if(is_dynamic){
-        Allocator allocator(segment.get_segment_manager());
-        SharedType value(allocator);
-        value = data;
-        myHashMap->insert_or_assign(key, value);
-    }else
-        myHashMap->insert_or_assign(key, data);
+    auto value = GetData(data);
+    myHashMap->insert_or_assign(key, value);
     return true;
 }
 /**

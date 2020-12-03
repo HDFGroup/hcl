@@ -55,6 +55,8 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <boost/interprocess/allocators/allocator.hpp>
+namespace bip = boost::interprocess;
 
 namespace hcl {
 /**
@@ -65,7 +67,7 @@ namespace hcl {
  */
 
 template<typename KeyType, typename MappedType, typename Compare =
-         std::less<KeyType>>
+         std::less<KeyType>, class Allocator=nullptr_t ,class SharedType=nullptr_t>
 class map {
   private:
     std::hash<KeyType> keyHash;
@@ -88,9 +90,22 @@ class map {
     boost::interprocess::interprocess_mutex* mutex;
     bool server_on_node;
     CharStruct backed_file;
-
   public:
     ~map();
+    template<typename A=Allocator>
+    typename std::enable_if_t<std::is_same<A, nullptr_t>::value,MappedType>
+    GetData(MappedType & data){
+        return data;
+    }
+
+    template<typename A=Allocator>
+    typename std::enable_if_t<! std::is_same<A, nullptr_t>::value,SharedType>
+    GetData(MappedType & data){
+        Allocator allocator(segment.get_segment_manager());
+        SharedType value(allocator);
+        value = data;
+        return value;
+    }
 
     explicit map(std::string name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") + "_TEST_MAP");
 

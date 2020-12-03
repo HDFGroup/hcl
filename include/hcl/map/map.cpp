@@ -23,14 +23,14 @@
 #define INCLUDE_HCL_MAP_MAP_CPP_
 
 /* Constructor to deallocate the shared memory*/
-template<typename KeyType, typename MappedType, typename Compare>
-map<KeyType, MappedType, Compare>::~map() {
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
+map<KeyType, MappedType, Compare, Allocator, SharedType>::~map() {
     if (is_server)
         boost::interprocess::file_mapping::remove(backed_file.c_str());
 }
 
-template<typename KeyType, typename MappedType, typename Compare>
-map<KeyType, MappedType, Compare>::map(std::string name_)
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
+map<KeyType, MappedType, Compare, Allocator, SharedType>::map(std::string name_)
     : num_servers(HCL_CONF->NUM_SERVERS),
       my_server(HCL_CONF->MY_SERVER),
       memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
@@ -64,17 +64,17 @@ map<KeyType, MappedType, Compare>::map(std::string name_)
 #ifdef HCL_ENABLE_RPCLIB
             case RPCLIB: {
                 std::function<bool(KeyType &, MappedType &)> putFunc(
-                    std::bind(&map<KeyType, MappedType, Compare>::LocalPut, this,
+                    std::bind(&map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalPut, this,
                               std::placeholders::_1, std::placeholders::_2));
                 std::function<std::pair<bool, MappedType>(KeyType &)> getFunc(
-                    std::bind(&map<KeyType, MappedType, Compare>::LocalGet, this,
+                    std::bind(&map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalGet, this,
                               std::placeholders::_1));
                 std::function<std::pair<bool, MappedType>(KeyType &)> eraseFunc(
-                    std::bind(&map<KeyType, MappedType, Compare>::LocalErase, this,
+                    std::bind(&map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalErase, this,
                               std::placeholders::_1));
                 std::function<std::vector<std::pair<KeyType, MappedType>>(void)>
                         getAllDataInServerFunc(std::bind(
-                            &map<KeyType, MappedType, Compare>::LocalGetAllDataInServer,
+                            &map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalGetAllDataInServer,
                             this));
                 std::function<std::vector<std::pair<KeyType, MappedType>>(KeyType &,KeyType&)>
                         containsInServerFunc(std::bind(&map<KeyType, MappedType,
@@ -99,18 +99,18 @@ map<KeyType, MappedType, Compare>::map(std::string name_)
                 {
 
                     std::function<void(const tl::request &, KeyType &, MappedType &)> putFunc(
-                        std::bind(&map<KeyType, MappedType, Compare>::ThalliumLocalPut, this,
+                        std::bind(&map<KeyType, MappedType, Compare, Allocator, SharedType>::ThalliumLocalPut, this,
                                   std::placeholders::_1, std::placeholders::_2,
                                   std::placeholders::_3));
                     std::function<void(const tl::request &, KeyType &)> getFunc(
-                        std::bind(&map<KeyType, MappedType, Compare>::ThalliumLocalGet, this,
+                        std::bind(&map<KeyType, MappedType, Compare, Allocator, SharedType>::ThalliumLocalGet, this,
                                   std::placeholders::_1, std::placeholders::_2));
                     std::function<void(const tl::request &, KeyType &)> eraseFunc(
-                        std::bind(&map<KeyType, MappedType, Compare>::ThalliumLocalErase, this,
+                        std::bind(&map<KeyType, MappedType, Compare, Allocator, SharedType>::ThalliumLocalErase, this,
                                   std::placeholders::_1, std::placeholders::_2));
                     std::function<void(const tl::request &)>
                             getAllDataInServerFunc(std::bind(
-                                &map<KeyType, MappedType, Compare>::ThalliumLocalGetAllDataInServer,
+                                &map<KeyType, MappedType, Compare, Allocator, SharedType>::ThalliumLocalGetAllDataInServer,
                                 this, std::placeholders::_1));
                     std::function<void(const tl::request &, KeyType &, KeyType &)>
                             containsInServerFunc(std::bind(&map<KeyType, MappedType,
@@ -149,17 +149,13 @@ map<KeyType, MappedType, Compare>::map(std::string name_)
  * @param data, the value for put
  * @return bool, true if Put was successful else false.
  */
-template<typename KeyType, typename MappedType, typename Compare>
-bool map<KeyType, MappedType, Compare>::LocalPut(KeyType &key,
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
+bool map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalPut(KeyType &key,
                                                  MappedType &data) {
     AutoTrace trace = AutoTrace("hcl::map::Put(local)", key, data);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex);
-    mymap->insert_or_assign(key, data);
-    /*typename MyMap::iterator iterator = mymap->find(key);
-      if (iterator != mymap->end()) {
-      mymap->erase(iterator);
-      }
-      mymap->insert(std::pair<KeyType, MappedType>(key, data));*/
+    auto value = GetData(data);
+    mymap->insert_or_assign(key, value);
     return true;
 }
 
@@ -169,8 +165,8 @@ bool map<KeyType, MappedType, Compare>::LocalPut(KeyType &key,
  * @param data, the value for put
  * @return bool, true if Put was successful else false.
  */
-template<typename KeyType, typename MappedType, typename Compare>
-bool map<KeyType, MappedType, Compare>::Put(KeyType &key,
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
+bool map<KeyType, MappedType, Compare, Allocator, SharedType>::Put(KeyType &key,
                                             MappedType &data) {
     size_t key_hash = keyHash(key);
     uint16_t key_int = static_cast<uint16_t>(key_hash % num_servers);
@@ -189,9 +185,9 @@ bool map<KeyType, MappedType, Compare>::Put(KeyType &key,
  * @return return a pair of bool and Value. If bool is true then
  * data was found and is present in value part else bool is set to false
  */
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::pair<bool, MappedType>
-map<KeyType, MappedType, Compare>::LocalGet(KeyType &key) {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalGet(KeyType &key) {
     AutoTrace trace = AutoTrace("hcl::map::Get(local)", key);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
             lock(*mutex);
@@ -209,9 +205,9 @@ map<KeyType, MappedType, Compare>::LocalGet(KeyType &key) {
  * @return return a pair of bool and Value. If bool is true then
  * data was found and is present in value part else bool is set to false
  */
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::pair<bool, MappedType>
-map<KeyType, MappedType, Compare>::Get(KeyType &key) {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::Get(KeyType &key) {
     size_t key_hash = keyHash(key);
     uint16_t key_int = key_hash % num_servers;
     if (key_int == my_server && server_on_node) {
@@ -224,9 +220,9 @@ map<KeyType, MappedType, Compare>::Get(KeyType &key) {
     }
 }
 
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::pair<bool, MappedType>
-map<KeyType, MappedType, Compare>::LocalErase(KeyType &key) {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalErase(KeyType &key) {
     AutoTrace trace = AutoTrace("hcl::map::Erase(local)", key);
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
             lock(*mutex);
@@ -234,9 +230,9 @@ map<KeyType, MappedType, Compare>::LocalErase(KeyType &key) {
     return std::pair<bool, MappedType>(s > 0, MappedType());
 }
 
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::pair<bool, MappedType>
-map<KeyType, MappedType, Compare>::Erase(KeyType &key) {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::Erase(KeyType &key) {
     size_t key_hash = keyHash(key);
     uint16_t key_int = key_hash % num_servers;
     if (key_int == my_server && server_on_node) {
@@ -254,9 +250,9 @@ map<KeyType, MappedType, Compare>::Erase(KeyType &key) {
  * @return return a pair of bool and Value. If bool is true then data was
  * found and is present in value part else bool is set to false
  */
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::vector<std::pair<KeyType, MappedType>>
-map<KeyType, MappedType, Compare>::Contains(KeyType &key_start,KeyType &key_end) {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::Contains(KeyType &key_start,KeyType &key_end) {
     AutoTrace trace = AutoTrace("hcl::map::Contains", key_start,key_end);
     auto final_values = std::vector<std::pair<KeyType, MappedType>>();
     auto current_server = ContainsInServer(key_start,key_end);
@@ -271,9 +267,9 @@ map<KeyType, MappedType, Compare>::Contains(KeyType &key_start,KeyType &key_end)
     return final_values;
 }
 
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::vector<std::pair<KeyType, MappedType>>
-map<KeyType, MappedType, Compare>::GetAllData() {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::GetAllData() {
     AutoTrace trace = AutoTrace("hcl::map::GetAllData");
     auto final_values = std::vector<std::pair<KeyType, MappedType>>();
     auto current_server = GetAllDataInServer();
@@ -288,9 +284,9 @@ map<KeyType, MappedType, Compare>::GetAllData() {
     return final_values;
 }
 
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::vector<std::pair<KeyType, MappedType>>
-map<KeyType, MappedType, Compare>::LocalContainsInServer(KeyType &key_start,KeyType &key_end) {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalContainsInServer(KeyType &key_start,KeyType &key_end) {
     AutoTrace trace = AutoTrace("hcl::map::ContainsInServer", key_start,key_end);
     auto final_values = std::vector<std::pair<KeyType, MappedType>>();
     {
@@ -320,9 +316,9 @@ map<KeyType, MappedType, Compare>::LocalContainsInServer(KeyType &key_start,KeyT
     return final_values;
 }
 
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::vector<std::pair<KeyType, MappedType>>
-map<KeyType, MappedType, Compare>::ContainsInServer(KeyType &key_start,KeyType &key_end) {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::ContainsInServer(KeyType &key_start,KeyType &key_end) {
     if (server_on_node) {
         return LocalContainsInServer(key_start,key_end);
     }
@@ -333,9 +329,9 @@ map<KeyType, MappedType, Compare>::ContainsInServer(KeyType &key_start,KeyType &
     }
 }
 
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::vector<std::pair<KeyType, MappedType>>
-map<KeyType, MappedType, Compare>::LocalGetAllDataInServer() {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalGetAllDataInServer() {
     AutoTrace trace = AutoTrace("hcl::map::GetAllDataInServer", NULL);
     auto final_values = std::vector<std::pair<KeyType, MappedType>>();
     {
@@ -351,9 +347,9 @@ map<KeyType, MappedType, Compare>::LocalGetAllDataInServer() {
     return final_values;
 }
 
-template<typename KeyType, typename MappedType, typename Compare>
+template<typename KeyType, typename MappedType, typename Compare, typename Allocator, typename SharedType>
 std::vector<std::pair<KeyType, MappedType>>
-map<KeyType, MappedType, Compare>::GetAllDataInServer() {
+map<KeyType, MappedType, Compare, Allocator, SharedType>::GetAllDataInServer() {
     if (server_on_node) {
         return LocalGetAllDataInServer();
     }
