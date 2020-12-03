@@ -120,19 +120,8 @@ Response RPC::call(uint16_t server_index,
 #endif
 #ifdef HCL_ENABLE_THALLIUM_TCP
         case THALLIUM_TCP: {
-            std::shared_ptr<tl::engine> thallium_client;
-            if (HCL_CONF->IS_SERVER) {
-                thallium_client = std::make_shared<tl::engine>(HCL_CONF->TCP_CONF.c_str(), MARGO_CLIENT_MODE);
-            }
-            else {
-                thallium_client = thallium_engine;
-            }
-
-            tl::remote_procedure remote_procedure = thallium_client->define(func_name.c_str());
-            // Setup args for RDMA bulk transfer
-            // std::vector<std::pair<void*,std::size_t>> segments(num_args);
-
-            return remote_procedure.on(thallium_endpoints[server_index])(std::forward<Args>(args)...);
+            tl::remote_procedure remote_proc = thallium_engine->define(func_name.c_str());
+            return remote_proc.on(thallium_endpoints[server_index])(std::forward<Args>(args)...);
             break;
         }
 #endif

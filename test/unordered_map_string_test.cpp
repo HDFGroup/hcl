@@ -141,7 +141,7 @@ int main (int argc,char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
     int ranks_per_server=comm_size,num_request=10000;
-    long size_of_request=1000;
+    long size_of_request=1024*256;
     bool debug=false;
     bool server_on_node=false;
     if(argc > 1)    ranks_per_server = atoi(argv[1]);
@@ -150,10 +150,6 @@ int main (int argc,char* argv[])
     if(argc > 4)    server_on_node = (bool)atoi(argv[4]);
     if(argc > 5)    debug = (bool)atoi(argv[5]);
 
-   /* if(comm_size/ranks_per_server < 2){
-        perror("comm_size/ranks_per_server should be atleast 2 for this test\n");
-        exit(-1);
-    }*/
     int len;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Get_processor_name(processor_name, &len);
@@ -171,45 +167,39 @@ int main (int argc,char* argv[])
     size_t my_server=my_rank / ranks_per_server;
     int num_servers=comm_size/ranks_per_server;
 
-    // The following is used to switch to 40g network on Ares.
-    // This is necessary when we use RoCE on Ares.
-    std::string proc_name = std::string(processor_name);
-    /*int split_loc = proc_name.find('.');
-    std::string node_name = proc_name.substr(0, split_loc);
-    std::string extra_info = proc_name.substr(split_loc+1, string::npos);
-    proc_name = node_name + "-40g." + extra_info;*/
-
     size_t size_of_elem = sizeof(int);
 
     printf("rank %d, is_server %d, my_server %zu, num_servers %d\n",my_rank,is_server,my_server,num_servers);
-
-    const int array_size=TEST_REQUEST_SIZE;
-
-    if (size_of_request != array_size) {
-        printf("Please set TEST_REQUEST_SIZE in include/hcl/common/constants.h instead. Testing with %d\n", array_size);
-    }
-
-
     HCL_CONF->IS_SERVER = is_server;
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
-    HCL_CONF->SERVER_ON_NODE = server_on_node || is_server;
-    HCL_CONF->SERVER_LIST_PATH = "./server_list";
-
+    HCL_CONF->SERVER_ON_NODE = true;
+    HCL_CONF->SERVER_LIST_PATH = "/home/hdevarajan/projects/hcl/test/server_list";
     typedef boost::interprocess::allocator<char, boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
     typedef bip::basic_string<char, std::char_traits<char>, CharAllocator> MappedUnitString;
-    hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString> *map;
+
+    hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString> *shm_map;
     if (is_server) {
-        map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
+        shm_map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
     }
     MPI_Barrier(MPI_COMM_WORLD);
     if (!is_server) {
-        map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
+        shm_map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
     }
 
-    std::string shared_vals(size_of_request,'x');
-    bip::string private_vals(size_of_request,'x');
-    std::unordered_map<KeyType,bip::string> lmap=std::unordered_map<KeyType,bip::string>();
+    hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString> *remote_map;
+    HCL_CONF->SERVER_ON_NODE = false;
+    if (is_server) {
+        remote_map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (!is_server) {
+        remote_map = new hcl::unordered_map<KeyType,std::string,CharAllocator,MappedUnitString>();
+    }
+
+    auto shared_vals = std::string(size_of_request,'x');
+    auto private_vals = std::string(size_of_request,'x');
+    std::unordered_map<KeyType,std::string> lmap=std::unordered_map<KeyType,std::string>();
 
     MPI_Comm client_comm;
     MPI_Comm_split(MPI_COMM_WORLD, !is_server, my_rank, &client_comm);
@@ -255,7 +245,7 @@ int main (int argc,char* argv[])
         size_t val=my_server;
         auto key=KeyType(val);
         local_map_timer.resumeTime();
-        map->Put(key,shared_vals);
+        shm_map->Put(key, shared_vals);
         local_map_timer.pauseTime();
     }
     double local_map_throughput=num_request/local_map_timer.getElapsedTime()*1000*size_of_elem*size_of_request/1024/1024;
@@ -266,7 +256,7 @@ int main (int argc,char* argv[])
         size_t val=my_server;
         auto key=KeyType(val);
         local_get_map_timer.resumeTime();
-        auto result = map->Get(key);
+        auto result = shm_map->Get(key);
         local_get_map_timer.pauseTime();
     }
 
@@ -299,8 +289,8 @@ int main (int argc,char* argv[])
         size_t val = my_server+1;
         auto key=KeyType(val);
         remote_map_timer.resumeTime();
-        map->Put(key
-                ,shared_vals);
+        remote_map->Put(key
+                , shared_vals);
         remote_map_timer.pauseTime();
     }
     double remote_map_throughput=num_request/remote_map_timer.getElapsedTime()*1000*size_of_elem*size_of_request/1024/1024;
@@ -313,7 +303,7 @@ int main (int argc,char* argv[])
         size_t val = my_server+1;
         auto key=KeyType(val);
         remote_get_map_timer.resumeTime();
-        auto result = map->Get(key);
+        auto result = remote_map->Get(key);
         remote_get_map_timer.pauseTime();
     }
     double remote_get_map_throughput=num_request/remote_get_map_timer.getElapsedTime()*1000*size_of_elem*size_of_request/1024/1024;
@@ -337,7 +327,7 @@ int main (int argc,char* argv[])
         printf("remote map throughput (get): %f\n",remote_get_tp_result);
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    delete(map);
+    delete(shm_map);
     MPI_Finalize();
     exit(EXIT_SUCCESS);
 }

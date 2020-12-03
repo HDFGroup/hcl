@@ -82,10 +82,11 @@ RPC::RPC() : server_port(HCL_CONF->RPC_PORT), server_list() {
             default:
                 break;
         }
-    } else {
-        switch (HCL_CONF->RPC_IMPLEMENTATION) {
+    }
+    run(HCL_CONF->RPC_THREADS);
+    switch (HCL_CONF->RPC_IMPLEMENTATION) {
 #ifdef HCL_ENABLE_RPCLIB
-            case RPCLIB: {
+        case RPCLIB: {
                 for (std::vector<rpc::client>::size_type i = 0; i < server_list.size(); ++i) {
                     rpclib_clients.push_back(std::make_unique<rpc::client>(server_list[i].c_str(), server_port + i));
                 }
@@ -93,10 +94,10 @@ RPC::RPC() : server_port(HCL_CONF->RPC_PORT), server_list() {
             }
 #endif
 #ifdef HCL_ENABLE_THALLIUM_TCP
-            case THALLIUM_TCP: {
-                init_engine_and_endpoints(HCL_CONF->TCP_CONF);
-                break;
-            }
+        case THALLIUM_TCP: {
+            init_engine_and_endpoints(HCL_CONF->TCP_CONF);
+            break;
+        }
 #endif
 #ifdef HCL_ENABLE_THALLIUM_ROCE
             case THALLIUM_ROCE: {
@@ -104,16 +105,14 @@ RPC::RPC() : server_port(HCL_CONF->RPC_PORT), server_list() {
                 break;
             }
 #endif
-            default:
-                break;
-        }
+        default:
+            break;
     }
-    run(HCL_CONF->RPC_THREADS);
 }
 
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 void RPC::init_engine_and_endpoints(CharStruct protocol) {
-    thallium_engine = hcl::Singleton<tl::engine>::GetInstance(protocol.c_str(), MARGO_CLIENT_MODE);
+    thallium_engine = hcl::Singleton<tl::engine>::GetInstance(protocol.string(), MARGO_CLIENT_MODE);
 
     thallium_endpoints.reserve(server_list.size());
     for (std::vector<CharStruct>::size_type i = 0; i < server_list.size(); ++i) {

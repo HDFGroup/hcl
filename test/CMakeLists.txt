@@ -3,7 +3,7 @@
 find_package(MPI REQUIRED COMPONENTS CXX)
 message(STATUS "found mpi.h at ${MPI_CXX_INCLUDE_DIRS}")
 
-set(examples unordered_map_test map_test queue_test priority_queue_test multimap_test set_test)
+set(examples unordered_map_int_test unordered_map_string_test map_test queue_test priority_queue_test multimap_test set_test)
 # global_clock_test global_sequence_test
 
 add_custom_target(copy_hostfile)

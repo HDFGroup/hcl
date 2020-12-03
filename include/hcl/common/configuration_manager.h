@@ -65,7 +65,7 @@ namespace hcl {
 #elif defined(HCL_ENABLE_THALLIUM_ROCE)
             RPC_IMPLEMENTATION(THALLIUM_ROCE),
 #endif
-            TCP_CONF("ofi+tcp"),
+            TCP_CONF("ofi+sockets"),
             VERBS_CONF("verbs"),
             VERBS_DOMAIN("mlx5_0"),
             MEMORY_ALLOCATED(1024ULL * 1024ULL * 128ULL),

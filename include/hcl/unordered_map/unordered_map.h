@@ -76,7 +76,7 @@ class unordered_map {
     typedef std::pair<const KeyType, MappedType> ValueType;
     typedef boost::interprocess::allocator<ValueType, boost::interprocess::managed_mapped_file::segment_manager> ShmemAllocator;
     typedef boost::interprocess::managed_mapped_file managed_segment;
-    typedef boost::unordered::unordered_map<KeyType, MappedType, std::hash<KeyType>,
+    typedef std::unordered_map<KeyType, MappedType, std::hash<KeyType>,
                                                                 std::equal_to<KeyType>,
                                                                 ShmemAllocator>
                                                                 MyHashMap;
@@ -102,7 +102,7 @@ class unordered_map {
     template<typename A=Allocator>
     typename std::enable_if_t<std::is_same<A, nullptr_t>::value,MappedType>
     GetData(MappedType & data){
-        return data;
+        return std::move(data);
     }
 
     template<typename A=Allocator>
@@ -110,7 +110,7 @@ class unordered_map {
     GetData(MappedType & data){
         Allocator allocator(segment.get_segment_manager());
         SharedType value(allocator);
-        value = data;
+        value = std::move(data);
         return value;
     }
 

@@ -144,8 +144,12 @@ template<typename KeyType, typename MappedType,typename Allocator, typename Shar
 bool unordered_map<KeyType, MappedType,Allocator,SharedType>::LocalPut(KeyType &key,
                                                   MappedType &data) {
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>lock(*mutex);
+    typename MyHashMap::iterator iterator = myHashMap->find(key);
+    if (iterator != myHashMap->end()) {
+        myHashMap->erase(iterator);
+    }
     auto value = GetData(data);
-    myHashMap->insert_or_assign(key, value);
+    myHashMap->insert(std::pair<KeyType, MappedType>(key, value));
     return true;
 }
 /**
