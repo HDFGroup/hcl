@@ -75,4 +75,3 @@ jobs:
           HCL_ENABLE_THALLIUM_TCP: ${{ matrix.THALLIUM_TCP }}
           HCL_ENABLE_THALLIUM_ROCE: ${{ matrix.THALLIUM_ROCE }}
         run: ci/install_hermes.sh
-c
