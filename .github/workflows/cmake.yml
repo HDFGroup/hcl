@@ -4,19 +4,12 @@ name: cmake
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
-on:
-  push:
-    branches: [ master]
-  pull_request:
-    branches: [ master ]
+on: [push,pull_request]
  
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Debug
   LOCAL: local
-  HCL_ENABLE_RPCLIB: OFF
-  HCL_ENABLE_THALLIUM_TCP: OFF
-  HCL_ENABLE_THALLIUM_ROCE: OFF
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
