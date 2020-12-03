@@ -67,17 +67,17 @@ unordered_map<KeyType, MappedType, Allocator, SharedType>::unordered_map(CharStr
 #ifdef HCL_ENABLE_RPCLIB
       case RPCLIB: {
           std::function<bool(KeyType &, MappedType &)> putFunc(
-              std::bind(&unordered_map<KeyType, MappedType>::LocalPut, this,
+              std::bind(&unordered_map<KeyType, MappedType, Allocator, SharedType>::LocalPut, this,
                         std::placeholders::_1, std::placeholders::_2));
           std::function<std::pair<bool,MappedType>(KeyType &)> getFunc(
-              std::bind(&unordered_map<KeyType, MappedType>::LocalGet, this,
+              std::bind(&unordered_map<KeyType, MappedType, Allocator, SharedType>::LocalGet, this,
                         std::placeholders::_1));
           std::function<bool(KeyType &)> eraseFunc(
-              std::bind(&unordered_map<KeyType, MappedType>::LocalErase, this,
+              std::bind(&unordered_map<KeyType, MappedType, Allocator, SharedType>::LocalErase, this,
                         std::placeholders::_1));
           std::function<std::vector<std::pair<KeyType, MappedType>>(void)>
               getAllDataInServerFunc(std::bind(
-                                         &unordered_map<KeyType, MappedType>::LocalGetAllDataInServer,
+                                         &unordered_map<KeyType, MappedType, Allocator, SharedType>::LocalGetAllDataInServer,
                                          this));
           rpc->bind(func_prefix+"_Put", putFunc);
           rpc->bind(func_prefix+"_Get", getFunc);
@@ -144,12 +144,8 @@ template<typename KeyType, typename MappedType,typename Allocator, typename Shar
 bool unordered_map<KeyType, MappedType,Allocator,SharedType>::LocalPut(KeyType &key,
                                                   MappedType &data) {
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>lock(*mutex);
-    typename MyHashMap::iterator iterator = myHashMap->find(key);
-    if (iterator != myHashMap->end()) {
-        myHashMap->erase(iterator);
-    }
     auto value = GetData(data);
-    myHashMap->insert(std::pair<KeyType, MappedType>(key, value));
+    myHashMap->insert_or_assign(key, value);
     return true;
 }
 /**

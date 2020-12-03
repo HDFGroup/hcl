@@ -146,9 +146,13 @@ int main (int argc,char* argv[])
     bool server_on_node=false;
     if(argc > 1)    ranks_per_server = atoi(argv[1]);
     if(argc > 2)    num_request = atoi(argv[2]);
-    if(argc > 3)    server_on_node = (bool)atoi(argv[4]);
-    if(argc > 4)    debug = (bool)atoi(argv[5]);
-
+    if(argc > 3)    server_on_node = (bool)atoi(argv[3]);
+    if(argc > 4)    debug = (bool)atoi(argv[4]);
+    if(debug && my_rank==0){
+        printf("%d ready for attach\n", comm_size);
+        fflush(stdout);
+        getchar();
+    }
     int len;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Get_processor_name(processor_name, &len);
@@ -156,11 +160,7 @@ int main (int argc,char* argv[])
         printf("%s/%d: %d\n", processor_name, my_rank, getpid());
     }
 
-    if(debug && my_rank==0){
-        printf("%d ready for attach\n", comm_size);
-        fflush(stdout);
-        getchar();
-    }
+
     MPI_Barrier(MPI_COMM_WORLD);
     bool is_server=(my_rank+1) % ranks_per_server == 0;
     size_t my_server=my_rank / ranks_per_server;
@@ -173,30 +173,30 @@ int main (int argc,char* argv[])
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
     HCL_CONF->SERVER_ON_NODE = true;
-    HCL_CONF->SERVER_LIST_PATH = "./server_list";
+    HCL_CONF->SERVER_LIST_PATH = "/home/hdevarajan/projects/hcl/test/server_list";
 
-    hcl::unordered_map<KeyType,int> *shm_map;
+    hcl::unordered_map<int,int> *shm_map;
     if (is_server) {
-        shm_map = new hcl::unordered_map<KeyType,int>();
+        shm_map = new hcl::unordered_map<int,int>("SHARED_UM");
     }
     MPI_Barrier(MPI_COMM_WORLD);
     if (!is_server) {
-        shm_map = new hcl::unordered_map<KeyType,int>();
+        shm_map = new hcl::unordered_map<int,int>("SHARED_UM");
     }
 
-    hcl::unordered_map<KeyType,int> *remote_map;
+    hcl::unordered_map<int,int> *remote_map;
     HCL_CONF->SERVER_ON_NODE = false;
     if (is_server) {
-        remote_map = new hcl::unordered_map<KeyType,int>();
+        remote_map = new hcl::unordered_map<int,int>("REMOTE_UM");
     }
     MPI_Barrier(MPI_COMM_WORLD);
     if (!is_server) {
-        remote_map = new hcl::unordered_map<KeyType,int>();
+        remote_map = new hcl::unordered_map<int,int>("REMOTE_UM");
     }
 
     auto shared_vals=int();
     auto private_vals=int();
-    std::unordered_map<KeyType,int> lmap=std::unordered_map<KeyType,int>();
+    std::unordered_map<int,int> lmap=std::unordered_map<int,int>();
 
     MPI_Comm client_comm;
     MPI_Comm_split(MPI_COMM_WORLD, !is_server, my_rank, &client_comm);
@@ -205,14 +205,14 @@ int main (int argc,char* argv[])
     MPI_Barrier(MPI_COMM_WORLD);
 
     Timer llocal_map_timer=Timer();
-    std::hash<KeyType> keyHash;
+    std::hash<int> keyHash;
     /*Local std::map test*/
     for(int i=0;i<num_request;i++){
         size_t val=my_server;
         llocal_map_timer.resumeTime();
-        size_t key_hash = keyHash(KeyType(val))%num_servers;
+        size_t key_hash = keyHash(int(val))%num_servers;
         if (key_hash == my_server && is_server){}
-        lmap.insert_or_assign(KeyType(val), private_vals);
+        lmap.insert_or_assign(int(val), private_vals);
         llocal_map_timer.pauseTime();
     }
 
@@ -222,9 +222,9 @@ int main (int argc,char* argv[])
     for(int i=0;i<num_request;i++){
         size_t val=my_server;
         llocal_get_map_timer.resumeTime();
-        size_t key_hash = keyHash(KeyType(val))%num_servers;
+        size_t key_hash = keyHash(int(val))%num_servers;
         if (key_hash == my_server && is_server){}
-        auto iterator = lmap.find(KeyType(val));
+        auto iterator = lmap.find(int(val));
         auto result = iterator->second;
         llocal_get_map_timer.pauseTime();
     }
@@ -240,7 +240,7 @@ int main (int argc,char* argv[])
     /*Local map test*/
     for(int i=0;i<num_request;i++){
         size_t val=my_server;
-        auto key=KeyType(val);
+        auto key=int(val);
         local_map_timer.resumeTime();
         shm_map->Put(key, shared_vals);
         local_map_timer.pauseTime();
@@ -251,7 +251,7 @@ int main (int argc,char* argv[])
     /*Local map test*/
     for(int i=0;i<num_request;i++){
         size_t val=my_server;
-        auto key=KeyType(val);
+        auto key=int(val);
         local_get_map_timer.resumeTime();
         auto result = shm_map->Get(key);
         local_get_map_timer.pauseTime();
@@ -284,7 +284,7 @@ int main (int argc,char* argv[])
     /*Remote map test*/
     for(int i=0;i<num_request;i++){
         size_t val = my_server+1;
-        auto key=KeyType(val);
+        auto key=int(val);
         remote_map_timer.resumeTime();
         remote_map->Put(key
                 , shared_vals);
@@ -298,7 +298,7 @@ int main (int argc,char* argv[])
     /*Remote map test*/
     for(int i=0;i<num_request;i++){
         size_t val = my_server+1;
-        auto key=KeyType(val);
+        auto key=int(val);
         remote_get_map_timer.resumeTime();
         auto result = remote_map->Get(key);
         remote_get_map_timer.pauseTime();

@@ -76,7 +76,7 @@ class unordered_map {
     typedef std::pair<const KeyType, MappedType> ValueType;
     typedef boost::interprocess::allocator<ValueType, boost::interprocess::managed_mapped_file::segment_manager> ShmemAllocator;
     typedef boost::interprocess::managed_mapped_file managed_segment;
-    typedef std::unordered_map<KeyType, MappedType, std::hash<KeyType>,
+    typedef boost::unordered_map<KeyType, MappedType, std::hash<KeyType>,
                                                                 std::equal_to<KeyType>,
                                                                 ShmemAllocator>
                                                                 MyHashMap;
@@ -110,8 +110,8 @@ class unordered_map {
     GetData(MappedType & data){
         Allocator allocator(segment.get_segment_manager());
         SharedType value(allocator);
-        value = std::move(data);
-        return value;
+        value.assign(data);
+        return std::move(value);
     }
 
    template<typename ReturnType,typename... CB_Tuple_Args>
