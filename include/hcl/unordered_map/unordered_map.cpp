@@ -69,9 +69,9 @@ unordered_map<KeyType, MappedType, Allocator, SharedType>::unordered_map(CharStr
           std::function<bool(KeyType &, MappedType &)> putFunc(
               std::bind(&unordered_map<KeyType, MappedType>::LocalPut, this,
                         std::placeholders::_1, std::placeholders::_2));
-          std::function<bool(KeyType &,MappedType &)> getFunc(
+          std::function<std::pair<bool,MappedType>(KeyType &)> getFunc(
               std::bind(&unordered_map<KeyType, MappedType>::LocalGet, this,
-                        std::placeholders::_1,std::placeholders::_2));
+                        std::placeholders::_1));
           std::function<bool(KeyType &)> eraseFunc(
               std::bind(&unordered_map<KeyType, MappedType>::LocalErase, this,
                         std::placeholders::_1));
