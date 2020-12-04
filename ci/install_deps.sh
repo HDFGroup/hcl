@@ -20,6 +20,9 @@ set +x
 . ${SPACK_DIR}/share/spack/setup-env.sh
 set -x
 
+set +x
+spack repo add ${SPACK_DIR}/var/spack/repos/sds-repo
+
 GOTCHA_SPEC=gotcha@${GOTCHA_VERSION}
 spack install ${GOTCHA_SPEC}
 THALLIUM_SPEC=mochi-thallium@${THALLIUM_VERSION}
