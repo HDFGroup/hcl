@@ -52,3 +52,10 @@ jobs:
       - name: Build And Install Dependencies
         if: steps.spack-cache.outputs.cache-hit != 'true'
         run: ci/install_deps.sh
+
+      - name: Build and Test
+          env:
+            HCL_ENABLE_RPCLIB: ${{ matrix.RPCLIB }}
+            HCL_ENABLE_THALLIUM_TCP: ${{ matrix.THALLIUM_TCP }}
+            HCL_ENABLE_THALLIUM_ROCE: ${{ matrix.THALLIUM_ROCE }}
+          run: ci/install_hcl.sh
