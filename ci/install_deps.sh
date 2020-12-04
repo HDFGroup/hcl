@@ -25,7 +25,7 @@ spack compiler list
 set +x
 spack repo add ${SPACK_DIR}/var/spack/repos/sds-repo
 
-THALLIUM_SPEC=mochi-thallium@${THALLIUM_VERSION}
+THALLIUM_SPEC="mochi-thallium~cereal@${THALLIUM_VERSION} ^mercury~boostsys"
 spack install ${THALLIUM_SPEC}
 
 GOTCHA_SPEC=gotcha@${GOTCHA_VERSION}
