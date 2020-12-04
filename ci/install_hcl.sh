@@ -33,5 +33,17 @@ if [ "${HCL_ENABLE_RPCLIB}" = "ON" ]; then
     popd
 fi
 
+if [ "${HCL_ENABLE_THALLIUM_TCP}" = "ON" ]; then
+    pushd test
+    # TODO(chogan): Run tests via ctest and enable Thallium tests
+    mpiexec -n 2 ./map_test || exit 1
+    mpiexec -n 2 ./multimap_test || exit 1
+    mpiexec -n 2 ./priority_queue_test || exit 1
+    mpiexec -n 2 ./queue_test || exit 1
+    mpiexec -n 2 ./set_test || exit 1
+    mpiexec -n 2 ./unordered_map_test || exit 1
+    popd
+fi
+
 make install || exit 1
 popd
