@@ -23,6 +23,12 @@ jobs:
           - RPCLIB: ON
             THALLIUM_TCP: OFF
             THALLIUM_ROCE: OFF
+          - RPCLIB: OFF
+            THALLIUM_TCP: ON
+            THALLIUM_ROCE: OFF
+          - RPCLIB: OFF
+            THALLIUM_TCP: OFF
+            THALLIUM_ROCE: ON
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
