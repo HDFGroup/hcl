@@ -1,5 +1,5 @@
-##!/bin/bash
-#
+#!/bin/bash
+
 #LOCAL=${HOME}/local
 #mkdir build
 #pushd build
@@ -46,4 +46,4 @@
 #fi
 #
 #make install || exit 1
-#popd
+popd
