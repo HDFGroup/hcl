@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>
-#include <unordered_map>
+#include <boost/interprocess/containers/flat_map.hpp>
 #include <boost/interprocess/containers/string.hpp>
 
 #include <mpi.h>
@@ -140,7 +140,7 @@ int main (int argc,char* argv[])
     int comm_size,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
-    int ranks_per_server=comm_size,num_request=10000;
+    int ranks_per_server=comm_size,num_request=1;
     long size_of_request=sizeof(int);
     bool debug=false;
     bool server_on_node=false;
@@ -196,7 +196,7 @@ int main (int argc,char* argv[])
 
     auto shared_vals=int();
     auto private_vals=int();
-    std::unordered_map<int,int> lmap=std::unordered_map<int,int>();
+    bip::flat_map<int,int> lmap=bip::flat_map<int,int>();
 
     MPI_Comm client_comm;
     MPI_Comm_split(MPI_COMM_WORLD, !is_server, my_rank, &client_comm);
@@ -234,27 +234,29 @@ int main (int argc,char* argv[])
         printf("llocal_map_throughput put: %f\n",llocal_map_throughput);
         printf("llocal_map_throughput get: %f\n",llocal_get_map_throughput);
     }
-    MPI_Barrier(client_comm);
+     MPI_Barrier(MPI_COMM_WORLD);
 
     Timer local_map_timer=Timer();
     /*Local map test*/
     for(int i=0;i<num_request;i++){
-        size_t val=my_server;
+        size_t val=num_request*my_rank + i;
         auto key=int(val);
         local_map_timer.resumeTime();
-        shm_map->Put(key, shared_vals);
+        auto result = shm_map->Put(key, my_rank);
         local_map_timer.pauseTime();
+        assert(result);
     }
     double local_map_throughput=num_request/local_map_timer.getElapsedTime()*1000*size_of_elem*size_of_request/1024/1024;
 
     Timer local_get_map_timer=Timer();
     /*Local map test*/
     for(int i=0;i<num_request;i++){
-        size_t val=my_server;
+        size_t val=num_request*my_rank + i;
         auto key=int(val);
         local_get_map_timer.resumeTime();
         auto result = shm_map->Get(key);
         local_get_map_timer.pauseTime();
+        assert(result.second == my_rank);
     }
 
     double local_get_map_throughput=num_request/local_get_map_timer.getElapsedTime()*1000*size_of_elem*size_of_request/1024/1024;
@@ -278,30 +280,35 @@ int main (int argc,char* argv[])
         printf("local_map_throughput get: %f\n", local_get_tp_result);
     }
 
-    MPI_Barrier(client_comm);
+     MPI_Barrier(MPI_COMM_WORLD);
 
     Timer remote_map_timer=Timer();
     /*Remote map test*/
     for(int i=0;i<num_request;i++){
-        size_t val = my_server+1;
+        size_t val = num_request*my_rank + i;
         auto key=int(val);
         remote_map_timer.resumeTime();
-        remote_map->Put(key
-                , shared_vals);
+        auto result = remote_map->Put(key
+                , my_rank);
         remote_map_timer.pauseTime();
+        assert(result);
     }
     double remote_map_throughput=num_request/remote_map_timer.getElapsedTime()*1000*size_of_elem*size_of_request/1024/1024;
 
-    MPI_Barrier(client_comm);
+     MPI_Barrier(MPI_COMM_WORLD);
 
     Timer remote_get_map_timer=Timer();
     /*Remote map test*/
     for(int i=0;i<num_request;i++){
-        size_t val = my_server+1;
+        size_t val = num_request*my_rank + i;
         auto key=int(val);
         remote_get_map_timer.resumeTime();
         auto result = remote_map->Get(key);
         remote_get_map_timer.pauseTime();
+        assert(result.first);
+        if(result.second != my_rank)
+            std::cout<<result.second<<std::endl;
+        assert(result.second == my_rank);
     }
     double remote_get_map_throughput=num_request/remote_get_map_timer.getElapsedTime()*1000*size_of_elem*size_of_request/1024/1024;
 
@@ -324,6 +331,7 @@ int main (int argc,char* argv[])
         printf("remote map throughput (get): %f\n",remote_get_tp_result);
     }
     MPI_Barrier(MPI_COMM_WORLD);
+    delete(remote_map);
     delete(shm_map);
     MPI_Finalize();
     exit(EXIT_SUCCESS);

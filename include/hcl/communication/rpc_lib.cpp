@@ -76,8 +76,8 @@ Response RPC::callWithTimeout(uint16_t server_index, int timeout_ms, CharStruct 
             tl::remote_procedure remote_procedure = thallium_client->define(func_name.c_str());
             // Setup args for RDMA bulk transfer
             // std::vector<std::pair<void*,std::size_t>> segments(num_args);
-
-            return remote_procedure.on(thallium_endpoints[server_index])(std::forward<Args>(args)...);
+            auto response = remote_procedure.on(thallium_endpoints[server_index])(std::forward<Args>(args)...);
+            return response;
             break;
         }
 #endif
@@ -121,7 +121,8 @@ Response RPC::call(uint16_t server_index,
 #ifdef HCL_ENABLE_THALLIUM_TCP
         case THALLIUM_TCP: {
             tl::remote_procedure remote_proc = thallium_engine->define(func_name.c_str());
-            return remote_proc.on(thallium_endpoints[server_index])(std::forward<Args>(args)...);
+            auto response = remote_proc.on(thallium_endpoints[server_index])(std::forward<Args>(args)...);
+            return response;
             break;
         }
 #endif

@@ -112,7 +112,7 @@ RPC::RPC() : server_port(HCL_CONF->RPC_PORT), server_list() {
 
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 void RPC::init_engine_and_endpoints(CharStruct protocol) {
-    thallium_engine = hcl::Singleton<tl::engine>::GetInstance(protocol.string(), MARGO_CLIENT_MODE);
+    thallium_engine = hcl::Singleton<tl::engine>::GetInstance(protocol.string(), MARGO_CLIENT_MODE,true);
 
     thallium_endpoints.reserve(server_list.size());
     for (std::vector<CharStruct>::size_type i = 0; i < server_list.size(); ++i) {

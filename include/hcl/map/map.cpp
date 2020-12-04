@@ -189,8 +189,7 @@ template<typename KeyType, typename MappedType, typename Compare, typename Alloc
 std::pair<bool, MappedType>
 map<KeyType, MappedType, Compare, Allocator, SharedType>::LocalGet(KeyType &key) {
     AutoTrace trace = AutoTrace("hcl::map::Get(local)", key);
-    boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
-            lock(*mutex);
+    boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex);
     typename MyMap::iterator iterator = mymap->find(key);
     if (iterator != mymap->end()) {
         return std::pair<bool, MappedType>(true, iterator->second);

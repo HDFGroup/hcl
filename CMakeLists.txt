@@ -5,8 +5,8 @@ project(hcl VERSION 1.0.0 DESCRIPTION "HCL: A library for flexible distributed d
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-2 -g3")
 
-option(HCL_ENABLE_RPCLIB "allow hcl to use RPCLIB" ON)
-option(HCL_ENABLE_THALLIUM_TCP "allow hcl to use THALLIUM_TCP" OFF)
+option(HCL_ENABLE_RPCLIB "allow hcl to use RPCLIB" OFF)
+option(HCL_ENABLE_THALLIUM_TCP "allow hcl to use THALLIUM_TCP" ON)
 option(HCL_ENABLE_THALLIUM_ROCE "allow hcl to use THALLIUM_ROCE" OFF)
 option(HCL_TIMER "Show timing information of library calls." OFF)
 option(HCL_TRACE "Show traces of library calls." OFF)
