@@ -38,7 +38,7 @@ spack install ${BOOST_SPEC}
 
 SPACK_STAGING_DIR=~/spack_staging
 mkdir -p ${SPACK_STAGING_DIR}
-spack view --verbose symlink ${SPACK_STAGING_DIR} ${THALLIUM_SPEC} ${RPCLIB_SPEC}
+spack view --verbose symlink ${SPACK_STAGING_DIR} ${THALLIUM_SPEC} ${RPCLIB_SPEC} ${BOOST_SPEC}
 set -x
 
 cp -LRnv ${SPACK_STAGING_DIR}/* ${INSTALL_DIR}
