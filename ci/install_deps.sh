@@ -11,6 +11,7 @@ THALLIUM_VERSION=0.8.3
 GOTCHA_VERSION=develop
 ORTOOLS_VERSION=7.7
 RPCLIB_VERSION=2.2.1
+BOOST_VERSION=1.74.0
 
 echo "Installing dependencies at ${INSTALL_DIR}"
 mkdir -p ${INSTALL_DIR}
@@ -30,6 +31,9 @@ spack install ${THALLIUM_SPEC}
 
 RPCLIB_SPEC=rpclib@${RPCLIB_VERSION}
 spack install ${RPCLIB_SPEC}
+
+BOOST_SPEC=boost@${BOOST_VERSION}
+spack install ${BOOST_SPEC}
 
 
 SPACK_STAGING_DIR=~/spack_staging
