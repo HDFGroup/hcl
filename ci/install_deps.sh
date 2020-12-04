@@ -23,11 +23,13 @@ set -x
 set +x
 spack repo add ${SPACK_DIR}/var/spack/repos/sds-repo
 
+
+spack install ${THALLIUM_SPEC}
+ORTOOLS_SPEC=gortools@${ORTOOLS_VERSION}
+
 GOTCHA_SPEC=gotcha@${GOTCHA_VERSION}
 spack install ${GOTCHA_SPEC}
 THALLIUM_SPEC=mochi-thallium@${THALLIUM_VERSION}
-spack install ${THALLIUM_SPEC}
-ORTOOLS_SPEC=gortools@${ORTOOLS_VERSION}
 spack install ${ORTOOLS_SPEC}
 RPCLIB_SPEC=rpclib@${RPCLIB_VERSION}
 spack install ${RPCLIB_SPEC}
