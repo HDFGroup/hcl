@@ -20,6 +20,8 @@ set +x
 . ${SPACK_DIR}/share/spack/setup-env.sh
 set -x
 
+spack compiler list
+
 set +x
 spack repo add ${SPACK_DIR}/var/spack/repos/sds-repo
 
