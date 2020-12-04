@@ -5,7 +5,7 @@ name: cmake
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
 on: [push,pull_request]
- 
+
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Debug
@@ -54,7 +54,7 @@ jobs:
           sudo apt-get install -y mpich
           sudo apt-get install -y zlib1g-dev 
           sudo apt-get install -y libsdl2-dev
-          
+
       - name: Build And Install Dependencies
         if: steps.spack-cache.outputs.cache-hit != 'true'
         run: ci/install_deps.sh
