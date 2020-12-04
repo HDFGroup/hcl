@@ -22,7 +22,7 @@ set -x
 
 GOTCHA_SPEC=gotcha@${GOTCHA_VERSION}
 spack install ${GOTCHA_SPEC}
-THALLIUM_SPEC="mochi-thallium@0.8.3"
+THALLIUM_SPEC=mochi-thallium@${THALLIUM_VERSION}
 spack install ${THALLIUM_SPEC}
 ORTOOLS_SPEC=gortools@${ORTOOLS_VERSION}
 spack install ${ORTOOLS_SPEC}
