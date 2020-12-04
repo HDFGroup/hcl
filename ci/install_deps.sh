@@ -28,11 +28,12 @@ spack repo add ${SPACK_DIR}/var/spack/repos/sds-repo
 GOTCHA_SPEC=gotcha@${GOTCHA_VERSION}
 spack install ${GOTCHA_SPEC}
 
+
+THALLIUM_SPEC="mochi-thallium~cereal@${THALLIUM_VERSION} ^mercury~boostsys"
+spack install ${THALLIUM_SPEC}
+
 #ORTOOLS_SPEC=gortools@${ORTOOLS_VERSION}
 #spack install ${ORTOOLS_SPEC}
-
-#THALLIUM_SPEC="mochi-thallium~cereal@${THALLIUM_VERSION} ^mercury~boostsys"
-#spack install ${THALLIUM_SPEC}
 
 
 #RPCLIB_SPEC=rpclib@${RPCLIB_VERSION}
