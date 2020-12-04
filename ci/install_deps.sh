@@ -25,16 +25,8 @@ spack compiler list
 set +x
 spack repo add ${SPACK_DIR}/var/spack/repos/sds-repo
 
-GOTCHA_SPEC=gotcha@${GOTCHA_VERSION}
-spack install ${GOTCHA_SPEC}
-
-
 THALLIUM_SPEC="mochi-thallium~cereal@${THALLIUM_VERSION} ^mercury~boostsys"
 spack install ${THALLIUM_SPEC}
-
-ORTOOLS_SPEC=gortools@${ORTOOLS_VERSION}
-spack install ${ORTOOLS_SPEC}
-
 
 RPCLIB_SPEC=rpclib@${RPCLIB_VERSION}
 spack install ${RPCLIB_SPEC}
@@ -42,7 +34,7 @@ spack install ${RPCLIB_SPEC}
 
 SPACK_STAGING_DIR=~/spack_staging
 mkdir -p ${SPACK_STAGING_DIR}
-spack view --verbose symlink ${SPACK_STAGING_DIR} ${THALLIUM_SPEC} ${GOTCHA_SPEC} ${ORTOOLS_SPEC} ${RPCLIB_SPEC}
+spack view --verbose symlink ${SPACK_STAGING_DIR} ${THALLIUM_SPEC} ${RPCLIB_SPEC}
 set -x
 
 cp -LRnv ${SPACK_STAGING_DIR}/* ${INSTALL_DIR}
