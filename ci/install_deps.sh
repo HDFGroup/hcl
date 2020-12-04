@@ -14,8 +14,7 @@ RPCLIB_VERSION=2.2.1
 
 echo "Installing dependencies at ${INSTALL_DIR}"
 mkdir -p ${INSTALL_DIR}
-git clone https://github.com/scs-lab/spack ${SPACK_DIR}
-git checkout -b v0.15.4.scs
+git clone --recursive https://github.com/scs-lab/spack ${SPACK_DIR}
 
 set +x
 . ${SPACK_DIR}/share/spack/setup-env.sh
