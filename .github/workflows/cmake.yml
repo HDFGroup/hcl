@@ -23,12 +23,12 @@ jobs:
           - RPCLIB: ON
             THALLIUM_TCP: OFF
             THALLIUM_ROCE: OFF
-          - RPCLIB: OFF
-            THALLIUM_TCP: ON
-            THALLIUM_ROCE: OFF
-          - RPCLIB: OFF
-            THALLIUM_TCP: OFF
-            THALLIUM_ROCE: ON
+#          - RPCLIB: OFF
+#            THALLIUM_TCP: ON
+#            THALLIUM_ROCE: OFF
+#          - RPCLIB: OFF
+#            THALLIUM_TCP: OFF
+#            THALLIUM_ROCE: ON
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -59,9 +59,9 @@ jobs:
         if: steps.spack-cache.outputs.cache-hit != 'true'
         run: ci/install_deps.sh
 
-      - name: Build and Test
-        env:
-          HCL_ENABLE_RPCLIB: ${{ matrix.RPCLIB }}
-          HCL_ENABLE_THALLIUM_TCP: ${{ matrix.THALLIUM_TCP }}
-          HCL_ENABLE_THALLIUM_ROCE: ${{ matrix.THALLIUM_ROCE }}
-        run: ci/install_hcl.sh
+#      - name: Build and Test
+#        env:
+#          HCL_ENABLE_RPCLIB: ${{ matrix.RPCLIB }}
+#          HCL_ENABLE_THALLIUM_TCP: ${{ matrix.THALLIUM_TCP }}
+#          HCL_ENABLE_THALLIUM_ROCE: ${{ matrix.THALLIUM_ROCE }}
+#        run: ci/install_hcl.sh
