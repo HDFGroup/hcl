@@ -29,16 +29,13 @@ spack repo add ${SPACK_DIR}/var/spack/repos/sds-repo
 THALLIUM_SPEC="mochi-thallium~cereal@${THALLIUM_VERSION} ^mercury~boostsys"
 spack install ${THALLIUM_SPEC}
 
-RPCLIB_SPEC=rpclib@${RPCLIB_VERSION}
-spack install ${RPCLIB_SPEC}
+#RPCLIB_SPEC=rpclib@${RPCLIB_VERSION}
+#spack install ${RPCLIB_SPEC}
 
-BOOST_SPEC=boost@${BOOST_VERSION}
-spack install ${BOOST_SPEC}
+#BOOST_SPEC=boost@${BOOST_VERSION}
+#spack install ${BOOST_SPEC}
 
-
-SPACK_STAGING_DIR=~/spack_staging
-mkdir -p ${SPACK_STAGING_DIR}
-spack view -i --verbose symlink ${SPACK_STAGING_DIR} ${THALLIUM_SPEC} ${RPCLIB_SPEC} ${BOOST_SPEC}
-set -x
-
-cp -LRnv ${SPACK_STAGING_DIR}/* ${INSTALL_DIR}
+spack env create hcl
+spack env activate hcl
+spack install ${THALLIUM_SPEC} # ${RPCLIB_SPEC} ${BOOST_SPEC}
+ls ${SPACK_DIR}/var/spack/environments/hermes/view/lib
