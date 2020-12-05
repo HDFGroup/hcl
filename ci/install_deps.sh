@@ -27,8 +27,8 @@ set +x
 spack repo add ${SPACK_DIR}/var/spack/repos/sds-repo
 
 THALLIUM_SPEC="mochi-thallium~cereal@${THALLIUM_VERSION} ^mercury~boostsys"
-spack install ${THALLIUM_SPEC}
-
+#spack install ${THALLIUM_SPEC}
+spack install pkg-config
 #RPCLIB_SPEC=rpclib@${RPCLIB_VERSION}
 #spack install ${RPCLIB_SPEC}
 
