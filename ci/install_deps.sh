@@ -37,5 +37,5 @@ spack install ${THALLIUM_SPEC}
 
 spack env create hcl
 spack env activate hcl
-spack install ${THALLIUM_SPEC} # ${RPCLIB_SPEC} ${BOOST_SPEC}
-ls ${SPACK_DIR}/var/spack/environments/hermes/view/lib
+spack install pkg-config # ${THALLIUM_SPEC} # ${RPCLIB_SPEC} ${BOOST_SPEC}
+ls ${SPACK_DIR}/var/spack/environments/hcl/view/lib
