@@ -38,4 +38,4 @@ spack install pkg-config
 spack env create hcl
 spack env activate hcl
 spack install pkg-config # ${THALLIUM_SPEC} # ${RPCLIB_SPEC} ${BOOST_SPEC}
-ls ${SPACK_DIR}/var/spack/environments/hcl/.spack-env/view/lib
+ls ${SPACK_DIR}/var/spack/environments/hcl/.spack-env/view
