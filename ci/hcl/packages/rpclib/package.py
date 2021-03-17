@@ -35,7 +35,7 @@ class Rpclib(CMakePackage):
     # maintainers = ['github_user1', 'github_user2']
 
     version('2.2.1', sha256='ceef2c521a1712035bc64d1bd5e3b2c7de16a1d856cbbeadd000ae318c96463f')
-    depends_on('gcc@9.3.0', when='@R2.2.1:')
+    depends_on('gcc@8.3.0', when='@R2.2.1:')
     depends_on('cmake@3.17.3', when='@R2.2.1:')
     # FIXME: Add dependencies if required.
     # depends_on('foo')
