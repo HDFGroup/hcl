@@ -30,14 +30,32 @@ class Hcl(CMakePackage):
 
     version('dev', branch='dev')
     version('0.1', branch='v0.1')
+    variant('communication',
+            default='rpclib',
+            values=('rpclib', 'thallium'),
+            multi=False,
+            description='Which communication interface to build')
+    variant('protocol',
+            default='tcp',
+            values=('tcp', 'roce'),
+            multi=True,
+            description='Compilers and runtime libraries to build')
     depends_on('gcc@8.3.0')
     depends_on('mpich@3.3.2~fortran')
-    depends_on('rpclib@2.2.1')
+    depends_on('rpclib@2.2.1', when='communication=rpclib')
+    depends_on('mochi-thallium~cereal@0.8.3', when='communication=thallium')
     depends_on('boost@1.74.0')
 
     def cmake_args(self):
-        args = ['-DCMAKE_INSTALL_PREFIX={}'.format(self.prefix),
-                '-DBASKET_ENABLE_RPCLIB=ON']
+        spec = self.spec
+        args = ['-DCMAKE_INSTALL_PREFIX={}'.format(self.prefix)]
+        if 'communication=rpclib' in spec:
+            args.append("-DBASKET_ENABLE_RPCLIB=ON")
+        elif 'communication=thallium' in spec:
+            if 'protocol=roce' in spec:
+                args.append("-DHCL_ENABLE_THALLIUM_ROCE=ON")
+            else:
+                args.append("-DHCL_ENABLE_THALLIUM_TCP=ON")
         return args
     def set_include(self,env,path):
         env.append_flags('CFLAGS', '-I{}'.format(path))
