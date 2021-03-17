@@ -44,17 +44,15 @@ RUN $spack repo add ${PROJECT_DIR}/ci/hcl
 # install software
 ENV HCL_VERSION=dev
 
-ENV HCL_SPEC="hcl@${HCL_VERSION} communication=rpclib"
-RUN $spack install --only dependencies ${HCL_SPEC}
+#RUN $spack spec "hcl@${HCL_VERSION}"
+
+ENV HCL_SPEC=hcl@${HCL_VERSION}
+RUN $spack install --only dependencies ${HCL_SPEC} communication=rpclib
+
+RUN $spack install --only dependencies ${HCL_SPEC} communication=thallium
 
 ## Link Software
-RUN $spack view --dependencies yes symlink -i ${INSTALL_DIR} ${HCL_SPEC}
-
-ENV HCL_SPEC="hcl@${HCL_VERSION} communication=thallium"
-RUN $spack install --only dependencies ${HCL_SPEC}
-
-## Link Software
-RUN $spack view --dependencies yes symlink -i ${INSTALL_DIR} ${HCL_SPEC}
+RUN $spack view symlink -i ${INSTALL_DIR} gcc@8.3.0 mpich@3.3.2 rpclib@2.2.1 mochi-thallium@0.8.3 boost@1.74.0
 
 RUN echo "export PATH=${SPACK_ROOT}/bin:$PATH" >> /root/.bashrc
 RUN echo ". $SPACK_ROOT/share/spack/setup-env.sh" >> /root/.bashrc
