@@ -42,53 +42,21 @@ RUN $spack repo add ${SDS_DIR}
 RUN $spack repo add ${PROJECT_DIR}/ci/hcl
 
 # install software
-ENV        THALLIUM_VERSION=0.8.3 \
-           MERCURY_VERSION=2.0.0 \
-           MPICH_VERSION=3.3.2 \
-           RPCLIB_VERSION=2.2.1 \
-           BOOST_VERSION=1.74.0 \
-           GCC_VERSION=8.3.0
+ENV HCL_VERSION=dev
 
-ENV GCC_SPEC="gcc@${GCC_VERSION}"
-RUN $spack install -y ${GCC_SPEC}
+ENV HCL_SPEC="hcl@${HCL_VERSION} communication=rpclib"
+RUN $spack install --only dependencies ${HCL_SPEC}
 
-ENV PATH=$SPACK_ROOT/bin:${PATH}
+## Link Software
+RUN $spack view --dependencies yes symlink -i ${INSTALL_DIR} ${HCL_SPEC}
+
+ENV HCL_SPEC="hcl@${HCL_VERSION} communication=thallium"
+RUN $spack install --only dependencies ${HCL_SPEC}
+
+## Link Software
+RUN $spack view --dependencies yes symlink -i ${INSTALL_DIR} ${HCL_SPEC}
 
 RUN echo "export PATH=${SPACK_ROOT}/bin:$PATH" >> /root/.bashrc
 RUN echo ". $SPACK_ROOT/share/spack/setup-env.sh" >> /root/.bashrc
 
 SHELL ["/bin/bash", "-c"]
-
-RUN . $SPACK_ROOT/share/spack/setup-env.sh && spack load ${GCC_SPEC} && spack compiler find
-
-RUN spack compiler list
-
-ENV GCC_SPEC="${GCC_SPEC}%${GCC_SPEC}"
-RUN $spack install -y ${GCC_SPEC}
-
-ENV GCC_SPEC="gcc@${GCC_VERSION}"
-
-ENV MPICH_SPEC="mpich@${MPICH_VERSION}%${GCC_SPEC}~fortran"
-RUN $spack install -y  ${MPICH_SPEC}
-
-ENV THALLIUM_SPEC="mochi-thallium~cereal@${THALLIUM_VERSION}%${GCC_SPEC}"
-RUN $spack install ${THALLIUM_SPEC}
-
-ENV RPCLIB_SPEC="rpclib@${RPCLIB_VERSION}%${GCC_SPEC}"
-RUN $spack install ${RPCLIB_SPEC}
-
-ENV BOOST_SPEC="boost@${BOOST_VERSION}%${GCC_SPEC}"
-RUN $spack install ${BOOST_SPEC}
-#
-## Link Software
-#
-#RUN mkdir -p $INSTALL_DIR
-#
-RUN $spack view --verbose symlink -i ${INSTALL_DIR} ${GCC_SPEC}%${GCC_SPEC}
-RUN $spack view --verbose symlink -i ${INSTALL_DIR} ${MPICH_SPEC}
-RUN $spack view --verbose symlink -i ${INSTALL_DIR} ${THALLIUM_SPEC}
-RUN $spack view --verbose symlink -i ${INSTALL_DIR} ${RPCLIB_SPEC}
-RUN $spack view --verbose symlink -i ${INSTALL_DIR} ${BOOST_SPEC}
-
-# startup
-CMD        /bin/bash -l

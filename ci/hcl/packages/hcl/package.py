@@ -34,12 +34,12 @@ class Hcl(CMakePackage):
             default='rpclib',
             values=('rpclib', 'thallium'),
             multi=False,
-            description='Which communication interface to build')
+            description='Which communication interface to build.')
     variant('protocol',
             default='tcp',
             values=('tcp', 'roce'),
             multi=True,
-            description='Compilers and runtime libraries to build')
+            description='Which communication protocol to use.')
     depends_on('gcc@8.3.0')
     depends_on('mpich@3.3.2~fortran')
     depends_on('rpclib@2.2.1', when='communication=rpclib')
