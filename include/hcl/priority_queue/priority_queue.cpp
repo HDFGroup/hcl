@@ -1,125 +1,32 @@
-/*
- * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
- *
- * This file is part of HCL
- * 
- * HCL is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Distributed under BSD 3-Clause license.                                   *
+ * Copyright by The HDF Group.                                               *
+ * Copyright by the Illinois Institute of Technology.                        *
+ * All rights reserved.                                                      *
+ *                                                                           *
+ * This file is part of Hermes. The full Hermes copyright notice, including  *
+ * terms governing use, modification, and redistribution, is contained in    *
+ * the COPYING file, which can be found at the top directory. If you do not  *
+ * have access to the file, you may request a copy from help@hdfgroup.org.   *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef INCLUDE_HCL_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_
 #define INCLUDE_HCL_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_
 
 /* Constructor to deallocate the shared memory*/
-template<typename MappedType, typename Compare>
-priority_queue<MappedType, Compare>::~priority_queue() {
-    if (is_server) bip::file_mapping::remove(backed_file.c_str());
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+priority_queue<MappedType, Compare, Allocator , SharedType>::~priority_queue() {
+    this->container::~container();
 }
 
-template<typename MappedType, typename Compare>
-priority_queue<MappedType, Compare>::priority_queue(std::string name_)
-    : num_servers(HCL_CONF->NUM_SERVERS),
-      my_server(HCL_CONF->MY_SERVER),
-      memory_allocated(HCL_CONF->MEMORY_ALLOCATED),
-      is_server(HCL_CONF->IS_SERVER),
-      segment(),
-      name(name_),
-      func_prefix(name_),
-      queue(),
-      server_on_node(HCL_CONF->SERVER_ON_NODE),
-      backed_file(HCL_CONF->BACKED_FILE_DIR + PATH_SEPARATOR + name_+"_"+std::to_string(my_server)) {
-
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+priority_queue<MappedType, Compare, Allocator , SharedType>::priority_queue(CharStruct name_, uint16_t port):container(name_,port),queue(){
     AutoTrace trace = AutoTrace("hcl::priority_queue");
-    /* create per server name for shared memory. Needed if multiple servers are
-       spawned on one node*/
-    this->name += "_" + std::to_string(my_server);
-    /* if current rank is a server */
-    rpc = Singleton<RPCFactory>::GetInstance()->GetRPC(HCL_CONF->RPC_PORT);
     if (is_server) {
-        /* Delete existing instance of shared memory space*/
-        bip::file_mapping::remove(backed_file.c_str());
-        /* allocate new shared memory space */
-        segment = bip::managed_mapped_file(bip::create_only, backed_file.c_str(),
-                                             memory_allocated);
-        ShmemAllocator alloc_inst(segment.get_segment_manager());
-        /* Construct priority queue in the shared memory space. */
-        queue = segment.construct<Queue>("Queue")(Compare(), alloc_inst);
-        mutex = segment.construct<bip::interprocess_mutex>("mtx")();
-        /* Create a RPC server and map the methods to it. */
-        switch (HCL_CONF->RPC_IMPLEMENTATION) {
-#ifdef HCL_ENABLE_RPCLIB
-            case RPCLIB: {
-                std::function<bool(MappedType &)> pushFunc(
-                    std::bind(&hcl::priority_queue<MappedType,
-                              Compare>::LocalPush, this,
-                              std::placeholders::_1));
-                std::function<std::pair<bool, MappedType>(void)> popFunc(std::bind(
-                    &hcl::priority_queue<MappedType,
-                    Compare>::LocalPop, this));
-                std::function<size_t(void)> sizeFunc(std::bind(
-                    &hcl::priority_queue<MappedType,
-                    Compare>::LocalSize, this));
-                std::function<std::pair<bool, MappedType>(void)> topFunc(std::bind(
-                    &hcl::priority_queue<MappedType,
-                    Compare>::LocalTop, this));
-                rpc->bind(func_prefix+"_Push", pushFunc);
-                rpc->bind(func_prefix+"_Pop", popFunc);
-                rpc->bind(func_prefix+"_Top", topFunc);
-                rpc->bind(func_prefix+"_Size", sizeFunc);
-                break;
-            }
-#endif
-#ifdef HCL_ENABLE_THALLIUM_TCP
-            case THALLIUM_TCP:
-#endif
-#ifdef HCL_ENABLE_THALLIUM_ROCE
-            case THALLIUM_ROCE:
-#endif
-#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-            {
-                std::function<void(const tl::request &, MappedType &)> pushFunc(
-                    std::bind(&hcl::priority_queue<MappedType, Compare>::ThalliumLocalPush,
-                              this, std::placeholders::_1, std::placeholders::_2));
-                std::function<void(const tl::request &)> popFunc(
-                    std::bind(&hcl::priority_queue<MappedType, Compare>::ThalliumLocalPop,
-                              this, std::placeholders::_1));
-                std::function<void(const tl::request &)> sizeFunc(
-                    std::bind(&hcl::priority_queue<MappedType, Compare>::ThalliumLocalSize,
-                              this, std::placeholders::_1));
-                std::function<void(const tl::request &)> topFunc(
-                    std::bind(&hcl::priority_queue<MappedType, Compare>::ThalliumLocalTop,
-                              this, std::placeholders::_1));
-                rpc->bind(func_prefix+"_Push", pushFunc);
-                rpc->bind(func_prefix+"_Pop", popFunc);
-                rpc->bind(func_prefix+"_Top", topFunc);
-                rpc->bind(func_prefix+"_Size", sizeFunc);
-                break;
-            }
-#endif
-            default:
-                break;
-        }
-    } else if (!is_server && server_on_node) {
-        /* Map the clients to their respective memory pools */
-        segment = bip::managed_mapped_file(bip::open_only, backed_file.c_str());
-        std::pair<Queue*, bip::managed_mapped_file::size_type> res;
-        res = segment.find<Queue> ("Queue");
-        queue = res.first;
-        std::pair<bip::interprocess_mutex *,
-                  bip::managed_mapped_file::size_type> res2;
-        res2 = segment.find<bip::interprocess_mutex>("mtx");
-        mutex = res2.first;
+        construct_shared_memory();
+        bind_functions();
+    }else if (!is_server && server_on_node) {
+        open_shared_memory();
     }
 }
 
@@ -129,12 +36,12 @@ priority_queue<MappedType, Compare>::priority_queue(std::string name_)
  * @param data, the value for put
  * @return bool, true if Put was successful else false.
  */
-template<typename MappedType, typename Compare>
-bool priority_queue<MappedType, Compare>::LocalPush(MappedType &data) {
-    AutoTrace trace = AutoTrace("hcl::priority_queue::Push(local)",
-                                data);
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+bool priority_queue<MappedType, Compare, Allocator , SharedType>::LocalPush(MappedType &data) {
+    AutoTrace trace = AutoTrace("hcl::priority_queue::Push(local)", data);
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
-    queue->push(data);
+    auto value = GetData<Allocator, MappedType, SharedType>(data);
+    queue->push(value);
     return true;
 }
 
@@ -145,10 +52,10 @@ bool priority_queue<MappedType, Compare>::LocalPush(MappedType &data) {
  * @param data, the value for put
  * @return bool, true if Put was successful else false.
  */
-template<typename MappedType, typename Compare>
-bool priority_queue<MappedType, Compare>::Push(MappedType &data,
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+bool priority_queue<MappedType, Compare, Allocator , SharedType>::Push(MappedType &data,
                                                uint16_t &key_int) {
-    if (key_int == my_server && server_on_node) {
+    if (is_local(key_int)) {
         return LocalPush(data);
     } else {
         AutoTrace trace = AutoTrace("hcl::priority_queue::Push(remote)",
@@ -164,9 +71,9 @@ bool priority_queue<MappedType, Compare>::Push(MappedType &data,
  * @return return a pair of bool and Value. If bool is true then data was
  * found and is present in value part else bool is set to false
  */
-template<typename MappedType, typename Compare>
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
 std::pair<bool, MappedType>
-priority_queue<MappedType, Compare>::LocalPop() {
+priority_queue<MappedType, Compare, Allocator , SharedType>::LocalPop() {
     AutoTrace trace = AutoTrace("hcl::priority_queue::Pop(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     if (queue->size() > 0) {
@@ -184,10 +91,10 @@ priority_queue<MappedType, Compare>::LocalPop() {
  * @return return a pair of bool and Value. If bool is true then data was
  * found and is present in value part else bool is set to false
  */
-template<typename MappedType, typename Compare>
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
 std::pair<bool, MappedType>
-priority_queue<MappedType, Compare>::Pop(uint16_t &key_int) {
-    if (key_int == my_server && server_on_node) {
+priority_queue<MappedType, Compare, Allocator , SharedType>::Pop(uint16_t &key_int) {
+    if (is_local(key_int)) {
         return LocalPop();
     } else {
         AutoTrace trace = AutoTrace("hcl::priority_queue::Pop(remote)",
@@ -203,9 +110,9 @@ priority_queue<MappedType, Compare>::Pop(uint16_t &key_int) {
  * @return return a pair of bool and Value. If bool is true then data was
  * found and is present in value part else bool is set to false
  */
-template<typename MappedType, typename Compare>
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
 std::pair<bool, MappedType>
-priority_queue<MappedType, Compare>::LocalTop() {
+priority_queue<MappedType, Compare, Allocator , SharedType>::LocalTop() {
     AutoTrace trace = AutoTrace("hcl::priority_queue::Top(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     if (queue->size() > 0) {
@@ -222,10 +129,10 @@ priority_queue<MappedType, Compare>::LocalTop() {
  * @return return a pair of bool and Value. If bool is true then data was
  * found and is present in value part else bool is set to false
  */
-template<typename MappedType, typename Compare>
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
 std::pair<bool, MappedType>
-priority_queue<MappedType, Compare>::Top(uint16_t &key_int) {
-    if (key_int == my_server && server_on_node) {
+priority_queue<MappedType, Compare, Allocator , SharedType>::Top(uint16_t &key_int) {
+    if (is_local(key_int)) {
         return LocalTop();
     } else {
         AutoTrace trace = AutoTrace("hcl::priority_queue::Top(remote)",
@@ -240,8 +147,8 @@ priority_queue<MappedType, Compare>::Top(uint16_t &key_int) {
  * @param key_int, key_int to know which server
  * @return return a size of the priority queue
  */
-template<typename MappedType, typename Compare>
-size_t priority_queue<MappedType, Compare>::LocalSize() {
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+size_t priority_queue<MappedType, Compare, Allocator , SharedType>::LocalSize() {
     AutoTrace trace = AutoTrace("hcl::priority_queue::Size(local)");
     bip::scoped_lock<bip::interprocess_mutex> lock(*mutex);
     size_t value = queue->size();
@@ -254,9 +161,9 @@ size_t priority_queue<MappedType, Compare>::LocalSize() {
  * @param key_int, key_int to know which server
  * @return return a size of the priority queue
  */
-template<typename MappedType, typename Compare>
-size_t priority_queue<MappedType, Compare>::Size(uint16_t &key_int) {
-    if (key_int == my_server && server_on_node) {
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+size_t priority_queue<MappedType, Compare, Allocator , SharedType>::Size(uint16_t &key_int) {
+    if (is_local(key_int)) {
         return LocalSize();
     } else {
         AutoTrace trace = AutoTrace("hcl::priority_queue::Top(remote)",
@@ -264,4 +171,77 @@ size_t priority_queue<MappedType, Compare>::Size(uint16_t &key_int) {
         return RPC_CALL_WRAPPER1("_Size", key_int, size_t);
     }
 }
+
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+void priority_queue<MappedType, Compare, Allocator , SharedType>::construct_shared_memory() {
+    ShmemAllocator alloc_inst(segment.get_segment_manager());
+    /* Construct priority queue in the shared memory space. */
+    queue = segment.construct<Queue>("Queue")(Compare(), alloc_inst);
+}
+
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+void priority_queue<MappedType, Compare, Allocator , SharedType>::open_shared_memory() {
+    std::pair<Queue*, bip::managed_mapped_file::size_type> res;
+    res = segment.find<Queue> ("Queue");
+    queue = res.first;
+}
+
+template<typename MappedType, typename Compare, typename Allocator , typename SharedType>
+void priority_queue<MappedType, Compare, Allocator , SharedType>::bind_functions() {
+    /* Create a RPC server and map the methods to it. */
+    switch (HCL_CONF->RPC_IMPLEMENTATION) {
+#ifdef HCL_ENABLE_RPCLIB
+        case RPCLIB: {
+            std::function<bool(MappedType &)> pushFunc(
+                    std::bind(&hcl::priority_queue<MappedType,
+                                      Compare>::LocalPush, this,
+                              std::placeholders::_1));
+            std::function<std::pair<bool, MappedType>(void)> popFunc(std::bind(
+                    &hcl::priority_queue<MappedType,
+                            Compare>::LocalPop, this));
+            std::function<size_t(void)> sizeFunc(std::bind(
+                    &hcl::priority_queue<MappedType,
+                            Compare>::LocalSize, this));
+            std::function<std::pair<bool, MappedType>(void)> topFunc(std::bind(
+                    &hcl::priority_queue<MappedType,
+                            Compare>::LocalTop, this));
+            rpc->bind(func_prefix+"_Push", pushFunc);
+            rpc->bind(func_prefix+"_Pop", popFunc);
+            rpc->bind(func_prefix+"_Top", topFunc);
+            rpc->bind(func_prefix+"_Size", sizeFunc);
+            break;
+        }
+#endif
+#ifdef HCL_ENABLE_THALLIUM_TCP
+            case THALLIUM_TCP:
+#endif
+#ifdef HCL_ENABLE_THALLIUM_ROCE
+            case THALLIUM_ROCE:
+#endif
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+            {
+                    std::function<void(const tl::request &, MappedType &)> pushFunc(
+                        std::bind(&hcl::priority_queue<MappedType,
+                                  Compare>::ThalliumLocalPush, this,
+                                  std::placeholders::_1, std::placeholders::_2));
+                    std::function<void(const tl::request &)> popFunc(std::bind(
+                        &hcl::priority_queue<MappedType,
+                        Compare>::ThalliumLocalPop, this, std::placeholders::_1));
+                    std::function<void(const tl::request &)> sizeFunc(std::bind(
+                        &hcl::priority_queue<MappedType,
+                        Compare>::ThalliumLocalSize, this, std::placeholders::_1));
+                    std::function<void(const tl::request &)> topFunc(std::bind(
+                        &hcl::priority_queue<MappedType,
+                        Compare>::ThalliumLocalTop, this,
+                        std::placeholders::_1));
+                    rpc->bind(func_prefix+"_Push", pushFunc);
+                    rpc->bind(func_prefix+"_Pop", popFunc);
+                    rpc->bind(func_prefix+"_Top", topFunc);
+                    rpc->bind(func_prefix+"_Size", sizeFunc);
+                    break;
+                }
+#endif
+    }
+}
+
 #endif  // INCLUDE_HCL_PRIORITY_QUEUE_PRIORITY_QUEUE_CPP_

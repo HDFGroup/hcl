@@ -1,22 +1,14 @@
-/*
- * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
- *
- * This file is part of HCL
- * 
- * HCL is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Distributed under BSD 3-Clause license.                                   *
+ * Copyright by The HDF Group.                                               *
+ * Copyright by the Illinois Institute of Technology.                        *
+ * All rights reserved.                                                      *
+ *                                                                           *
+ * This file is part of Hermes. The full Hermes copyright notice, including  *
+ * terms governing use, modification, and redistribution, is contained in    *
+ * the COPYING file, which can be found at the top directory. If you do not  *
+ * have access to the file, you may request a copy from help@hdfgroup.org.   *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 /*-------------------------------------------------------------------------
  *
@@ -32,15 +24,21 @@
 #ifndef INCLUDE_HCL_COMMON_DATA_STRUCTURES_H_
 #define INCLUDE_HCL_COMMON_DATA_STRUCTURES_H_
 
+#include <boost/interprocess/containers/string.hpp>
+#include <boost/interprocess/containers/vector.hpp>
+
 #ifdef HCL_ENABLE_RPCLIB
 #include <rpc/msgpack.hpp>
 #endif
 
-#include <string.h>
 #include <string>
 #include <vector>
 #include <cstdint>
 #include <chrono>
+#include <boost/concept_check.hpp>
+#include "typedefs.h"
+
+namespace bip = boost::interprocess;
 
 typedef struct CharStruct {
   private:
@@ -75,7 +73,7 @@ typedef struct CharStruct {
     char* data() {
         return value;
     }
-    size_t size() const {
+    const size_t size() const {
         return strlen(value);
     }
     /**
@@ -117,6 +115,12 @@ typedef struct CharStruct {
     }
 
 } CharStruct;
+
+static CharStruct operator+(const std::string& a1, const CharStruct& a2) {
+    std::string added=a1+std::string(a2.c_str());
+    return CharStruct(added);
+}
+
 namespace std {
 template<>
 struct hash<CharStruct> {
@@ -177,14 +181,24 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
  * Outstream conversions
  */
 
-std::ostream &operator<<(std::ostream &os, char const *m);
 template <typename T,typename O>
 std::ostream &operator<<(std::ostream &os, std::pair<T,O> const m){
     return os   << "{TYPE:pair," << "first:" << m.first << ","
                 << "second:" << m.second << "}";
 }
-std::ostream &operator<<(std::ostream &os, uint8_t const &m);
-std::ostream &operator<<(std::ostream &os, CharStruct const &m);
+
+std::ostream &operator<<(std::ostream &os, char const *m) {
+    return os << std::string(m);
+}
+
+std::ostream &operator<<(std::ostream &os, uint8_t const &m) {
+    return os << std::to_string(m);
+}
+
+std::ostream &operator<<(std::ostream &os, CharStruct const &m){
+    return os   << "{TYPE:CharStruct," << "value:" << m.c_str()<<"}";
+}
+
 template <typename T>
 std::ostream &operator<<(std::ostream &os, std::vector<T> const &ms){
     os << "[";
@@ -194,4 +208,27 @@ std::ostream &operator<<(std::ostream &os, std::vector<T> const &ms){
     os << "]";
     return os;
 }
+
+template<typename T>
+class CalculateSize{
+public:
+    really_long GetSize(T value){
+        return sizeof(value);
+    }
+};
+template <>
+class CalculateSize<std::string>{
+public:
+    really_long GetSize(std::string value){
+        return strlen(value.c_str())+1;
+    }
+};
+template <>
+class CalculateSize<bip::string>{
+public:
+    really_long GetSize(bip::string value){
+        return strlen(value.c_str())+1;
+    }
+};
+
 #endif  // INCLUDE_HCL_COMMON_DATA_STRUCTURES_H_

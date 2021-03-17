@@ -1,37 +1,34 @@
 #!/bin/bash
 
-LOCAL=${HOME}/local
+INSTALL_DIR=/root/install
+SPACK_DIR=/root/spack
+
 mkdir build
 pushd build
 
-CXXFLAGS="-I${LOCAL}/include -fsanitize=address -O1 -fno-omit-frame-pointer -g" \
-LDFLAGS="-L${LOCAL}/lib"                                       \
-    cmake                                                      \
-        -DCMAKE_INSTALL_PREFIX=${LOCAL}                        \
-        -DCMAKE_BUILD_RPATH="${LOCAL}/lib"                     \
-        -DCMAKE_INSTALL_RPATH="${LOCAL}/lib"                   \
-        -DCMAKE_BUILD_TYPE=Release                             \
-        -DCMAKE_CXX_COMPILER=`which mpicxx`                    \
-        -DCMAKE_C_COMPILER=`which mpicc`                       \
-        -DHCL_ENABLE_RPCLIB=${HCL_ENABLE_RPCLIB}               \
-        -DHCL_ENABLE_THALLIUM_TCP=${HCL_ENABLE_THALLIUM_TCP}   \
-        -DHCL_ENABLE_THALLIUM_ROCE=${HCL_ENABLE_THALLIUM_ROCE} \
-        -DBUILD_TEST=ON                                        \
-        ..
+CXXFLAGS="-I${INSTALL_DIR}/include"
+LDFLAGS="-L${INSTALL_DIR}/lib"
+CMAKE_C_COMPILER=${INSTALL_DIR}/bin/gcc
+CMAKE_CXX_COMPILER=${INSTALL_DIR}/bin/g++
 
-cmake --build . -- -j 2 VERBOSE=1 || exit 1
+echo ${INSTALL_DIR}
+ls -l ${INSTALL_DIR}/lib
 
-if [ "${HCL_ENABLE_RPCLIB}" = "ON" ]; then
-    pushd test
-    # TODO(chogan): Run tests via ctest and enable Thallium tests
-    mpiexec -n 2 ./map_test || exit 1
-    mpiexec -n 2 ./multimap_test || exit 1
-    mpiexec -n 2 ./priority_queue_test || exit 1
-    mpiexec -n 2 ./queue_test || exit 1
-    mpiexec -n 2 ./set_test || exit 1
-    mpiexec -n 2 ./unordered_map_test || exit 1
-    popd
-fi
+${INSTALL_DIR}/bin/cmake \
+    -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+    -DCMAKE_PREFIX_PATH=${INSTALL_DIR} \
+    -DCMAKE_BUILD_RPATH="${INSTALL_DIR}/lib" \
+    -DCMAKE_INSTALL_RPATH="${INSTALL_DIR}/lib" \
+    -DCMAKE_CXX_FLAGS="-I${INSTALL_DIR}/include -L${INSTALL_DIR}/lib" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_COMPILER=${INSTALL_DIR}/bin/g++ \
+    -DCMAKE_C_COMPILER=${INSTALL_DIR}/bin/gcc \
+    -DHCL_ENABLE_RPCLIB=${HCL_ENABLE_RPCLIB} \
+    -DHCL_ENABLE_THALLIUM_TCP=${HCL_ENABLE_THALLIUM_TCP} \
+    -DHCL_ENABLE_THALLIUM_ROCE=${HCL_ENABLE_THALLIUM_ROCE} \
+    -DBUILD_TEST=ON \
+    ..
 
-make install || exit 1
+${INSTALL_DIR}/bin/cmake --build . -- -j 2 VERBOSE=1 || exit 1
+
 popd

@@ -1,22 +1,14 @@
-/*
- * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
- *
- * This file is part of HCL
- * 
- * HCL is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Distributed under BSD 3-Clause license.                                   *
+ * Copyright by The HDF Group.                                               *
+ * Copyright by the Illinois Institute of Technology.                        *
+ * All rights reserved.                                                      *
+ *                                                                           *
+ * This file is part of Hermes. The full Hermes copyright notice, including  *
+ * terms governing use, modification, and redistribution, is contained in    *
+ * the COPYING file, which can be found at the top directory. If you do not  *
+ * have access to the file, you may request a copy from help@hdfgroup.org.   *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef INCLUDE_HCL_UNORDERED_MAP_UNORDERED_MAP_H_
 #define INCLUDE_HCL_UNORDERED_MAP_UNORDERED_MAP_H_
@@ -26,7 +18,6 @@
  */
 
 /** Standard C++ Headers**/
-#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -41,6 +32,9 @@
 #include <hcl/common/singleton.h>
 #include <hcl/common/typedefs.h>
 
+
+/** MPI Headers**/
+#include <mpi.h>
 /** RPC Lib Headers**/
 #ifdef HCL_ENABLE_RPCLIB
 #include <rpc/server.h>
@@ -53,9 +47,12 @@
 #endif
 /** Boost Headers **/
 #include <boost/interprocess/managed_shared_memory.hpp>
-#include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/unordered/unordered_map.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/interprocess/managed_mapped_file.hpp>
+#include <hcl/common/container.h>
 
 /** Namespaces Uses **/
 
@@ -63,60 +60,46 @@
 
 namespace hcl {
 /**
- * This is a Distributed HashMap Class. It uses shared memory + RPC to
+ * This is a Distributed HashMap Class. It uses shared memory + RPC + MPI to
  * achieve the data structure.
  *
  * @tparam MappedType, the value of the HashMap
  */
-template<typename KeyType, typename MappedType>
-class unordered_map {
+template<typename KeyType, typename MappedType,typename Hash = std::hash<KeyType>, class Allocator=nullptr_t ,class SharedType=nullptr_t>
+class unordered_map:public container {
   private:
-    std::hash<KeyType> keyHash;
     /** Class Typedefs for ease of use **/
     typedef std::pair<const KeyType, MappedType> ValueType;
     typedef boost::interprocess::allocator<ValueType, boost::interprocess::managed_mapped_file::segment_manager> ShmemAllocator;
     typedef boost::interprocess::managed_mapped_file managed_segment;
-    typedef boost::unordered::unordered_map<KeyType, MappedType, std::hash<KeyType>,
+    typedef boost::unordered::unordered_map<KeyType, MappedType, Hash,
                                                                 std::equal_to<KeyType>,
                                                                 ShmemAllocator>
                                                                 MyHashMap;
     /** Class attributes**/
-    int num_servers;
-    uint16_t  my_server;
-    std::shared_ptr<RPC> rpc;
-    really_long memory_allocated;
-    bool is_server;
-    boost::interprocess::managed_mapped_file segment;
-    CharStruct name, func_prefix;
+    Hash keyHash;
     MyHashMap *myHashMap;
-    boost::interprocess::interprocess_mutex* mutex;
-    bool server_on_node;
-    std::unordered_map<CharStruct, void*> binding_map;
-    CharStruct backed_file;
-
   public:
+    really_long size_occupied;
     ~unordered_map();
 
-    explicit unordered_map(CharStruct name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
-                           "_TEST_UNORDERED_MAP");
+    explicit unordered_map(CharStruct name_ = std::string("TEST_UNORDERED_MAP"), uint16_t port=HCL_CONF->RPC_PORT);
+    MyHashMap* data(){
+        if(server_on_node || is_server) return myHashMap;
+        else nullptr;
+    }
 
-   /* template <typename F>
-    void Bind(std::string rpc_name, F fun);*/
+    void construct_shared_memory() override{
+        /* Construct unordered_map in the shared memory space. */
+        myHashMap = segment.construct<MyHashMap>(name.c_str())(
+                128, Hash(), std::equal_to<KeyType>(),
+                segment.get_allocator<ValueType>());
 
-   template<typename CF, typename ReturnType,typename... ArgsType>
-   void Bind(CharStruct rpc_name, std::function<ReturnType(ArgsType...)> callback_func, CharStruct caller_func_name, CF caller_func);
+    }
 
-   template<typename ReturnType,typename... CB_Tuple_Args>
-   ReturnType Call(CharStruct cb_name, CB_Tuple_Args... cb_args){
-       auto iter =  binding_map.find(cb_name);
-       if(iter!=binding_map.end()){
-           std::function<ReturnType(CB_Tuple_Args...)> *cb_func=(std::function<ReturnType(CB_Tuple_Args...)> *)iter->second;
-           (*cb_func)(std::forward<CB_Tuple_Args>(cb_args)...);
-       }
-   }
+    void open_shared_memory() override;
 
-
-    void BindClient(std::string rpc_name);
+    void bind_functions() override;
 
     bool LocalPut(KeyType &key, MappedType &data);
     std::pair<bool, MappedType> LocalGet(KeyType &key);
@@ -146,112 +129,11 @@ class unordered_map {
     THALLIUM_DEFINE1(LocalGetAllDataInServer)
 #endif
 
-    bool Put(KeyType &key, MappedType &data);
+    bool Put(KeyType key, MappedType data);
     std::pair<bool, MappedType> Get(KeyType &key);
     std::pair<bool, MappedType> Erase(KeyType &key);
     std::vector<std::pair<KeyType, MappedType>> GetAllData();
     std::vector<std::pair<KeyType, MappedType>> GetAllDataInServer();
-
-    template<typename ReturnType,typename... CB_Tuple_Args>
-    typename std::enable_if_t<std::is_void<ReturnType>::value,bool>
-    LocalPutWithCallback(KeyType &key, MappedType &data,
-                         CharStruct cb_name,
-                         CB_Tuple_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Tuple_Args>
-    typename std::enable_if_t<!std::is_void<ReturnType>::value,std::pair<bool,ReturnType>>
-    LocalPutWithCallback(KeyType &key, MappedType &data,
-                         CharStruct cb_name,
-                         CB_Tuple_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Args>
-    typename std::enable_if_t<!std::is_void<ReturnType>::value,std::pair<bool,ReturnType>>
-    PutWithCallback(KeyType &key, MappedType &data,
-                    CharStruct c_name,
-                    CharStruct cb_name,
-                    CB_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Args>
-        typename std::enable_if_t<std::is_void<ReturnType>::value,bool>
-    PutWithCallback(KeyType &key, MappedType &data,
-                    CharStruct c_name,
-                    CharStruct cb_name,
-                    CB_Args... cb_args);
-
-
-    template<typename ReturnType,typename... CB_Tuple_Args>
-    typename std::enable_if_t<std::is_void<ReturnType>::value,std::pair<bool, MappedType>>
-    LocalGetWithCallback(KeyType &key,
-                         CharStruct cb_name,
-                         CB_Tuple_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Tuple_Args>
-    typename std::enable_if_t<!std::is_void<ReturnType>::value,std::pair<std::pair<bool, MappedType>,ReturnType>>
-    LocalGetWithCallback(KeyType &key,
-                         CharStruct cb_name,
-                         CB_Tuple_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Args>
-    typename std::enable_if_t<!std::is_void<ReturnType>::value,std::pair<std::pair<bool, MappedType>,ReturnType>>
-    GetWithCallback(KeyType &key,
-                    CharStruct c_name,
-                    CharStruct cb_name,
-                    CB_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Args>
-    typename std::enable_if_t<std::is_void<ReturnType>::value,std::pair<bool, MappedType>>
-    GetWithCallback(KeyType &key,
-                    CharStruct c_name,
-                    CharStruct cb_name,
-                    CB_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Tuple_Args>
-    typename std::enable_if_t<std::is_void<ReturnType>::value,std::pair<bool, MappedType>>
-    LocalEraseWithCallback(KeyType &key,
-                         std::string cb_name,
-                         CB_Tuple_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Tuple_Args>
-    typename std::enable_if_t<!std::is_void<ReturnType>::value,std::pair<std::pair<bool, MappedType>,ReturnType>>
-    LocalEraseWithCallback(KeyType &key,
-                         std::string cb_name,
-                         CB_Tuple_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Args>
-    typename std::enable_if_t<!std::is_void<ReturnType>::value,std::pair<std::pair<bool, MappedType>,ReturnType>>
-    EraseWithCallback(KeyType &key,
-                    std::string c_name,
-                    std::string cb_name,
-                    CB_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Args>
-    typename std::enable_if_t<std::is_void<ReturnType>::value,std::pair<bool, MappedType>>
-    EraseWithCallback(KeyType &key,
-                    std::string c_name,
-                    std::string cb_name,
-                    CB_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Tuple_Args>
-    typename std::enable_if_t<std::is_void<ReturnType>::value,std::vector<std::pair<bool, MappedType>>>
-    LocalGetAllDataInServerWithCallback(std::string cb_name,
-                                        CB_Tuple_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Tuple_Args>
-    typename std::enable_if_t<!std::is_void<ReturnType>::value,std::pair<std::vector<std::pair<bool, MappedType>>,ReturnType>>
-    LocalGetAllDataInServerWithCallback(std::string cb_name,
-                                        CB_Tuple_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Args>
-    typename std::enable_if_t<!std::is_void<ReturnType>::value,std::pair<std::vector<std::pair<bool, MappedType>>,ReturnType>>
-    GetAllDataInServerWithCallback(std::string c_name,
-                                   std::string cb_name,
-                                   CB_Args... cb_args);
-
-    template<typename ReturnType,typename... CB_Args>
-    typename std::enable_if_t<std::is_void<ReturnType>::value,std::vector<std::pair<bool, MappedType>>>
-    GetAllDataInServerWithCallback(std::string c_name,
-                                   std::string cb_name,
-                                   CB_Args... cb_args);
 };
 
 #include "unordered_map.cpp"

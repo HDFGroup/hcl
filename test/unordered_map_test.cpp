@@ -1,30 +1,26 @@
-/*
- * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
- *
- * This file is part of HCL
- *
- * HCL is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Distributed under BSD 3-Clause license.                                   *
+ * Copyright by The HDF Group.                                               *
+ * Copyright by the Illinois Institute of Technology.                        *
+ * All rights reserved.                                                      *
+ *                                                                           *
+ * This file is part of Hermes. The full Hermes copyright notice, including  *
+ * terms governing use, modification, and redistribution, is contained in    *
+ * the COPYING file, which can be found at the top directory. If you do not  *
+ * have access to the file, you may request a copy from help@hdfgroup.org.   *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include <sys/types.h>
 #include <unistd.h>
-#include <chrono>
-#include <unordered_map>
 
+#include <functional>
+#include <utility>
 #include <mpi.h>
-
+#include <iostream>
+#include <signal.h>
+#include <execinfo.h>
+#include <chrono>
+#include <map>
 #include <hcl/common/data_structures.h>
 #include <hcl/unordered_map/unordered_map.h>
 
@@ -46,16 +42,20 @@ struct KeyType{
     bool operator<(const KeyType &o) const {
         return a < o.a;
     }
+    bool operator>(const KeyType &o) const {
+        return a > o.a;
+    }
     bool Contains(const KeyType &o) const {
         return a==o.a;
     }
-#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-    template<typename A>
-    void serialize(A& ar) const {
-        ar & a;
-    }
-#endif
+
 };
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+template<typename A>
+void serialize(A &ar, KeyType &a) {
+    ar & a.a;
+}
+#endif
 namespace std {
     template<>
     struct hash<KeyType> {
@@ -77,7 +77,7 @@ int main (int argc,char* argv[])
     int comm_size,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
-    int ranks_per_server=comm_size,num_request=10000;
+    int ranks_per_server=comm_size,num_request=100;
     long size_of_request=1000;
     bool debug=false;
     bool server_on_node=false;
@@ -87,10 +87,6 @@ int main (int argc,char* argv[])
     if(argc > 4)    server_on_node = (bool)atoi(argv[4]);
     if(argc > 5)    debug = (bool)atoi(argv[5]);
 
-   /* if(comm_size/ranks_per_server < 2){
-        perror("comm_size/ranks_per_server should be atleast 2 for this test\n");
-        exit(-1);
-    }*/
     int len;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Get_processor_name(processor_name, &len);
@@ -105,20 +101,12 @@ int main (int argc,char* argv[])
     }
     MPI_Barrier(MPI_COMM_WORLD);
     bool is_server=(my_rank+1) % ranks_per_server == 0;
-    size_t my_server=my_rank / ranks_per_server;
+    int my_server=my_rank / ranks_per_server;
     int num_servers=comm_size/ranks_per_server;
-
-    // The following is used to switch to 40g network on Ares.
-    // This is necessary when we use RoCE on Ares.
     std::string proc_name = std::string(processor_name);
-    /*int split_loc = proc_name.find('.');
-    std::string node_name = proc_name.substr(0, split_loc);
-    std::string extra_info = proc_name.substr(split_loc+1, string::npos);
-    proc_name = node_name + "-40g." + extra_info;*/
-
     size_t size_of_elem = sizeof(int);
 
-    printf("rank %d, is_server %d, my_server %zu, num_servers %d\n",my_rank,is_server,my_server,num_servers);
+    printf("rank %d, is_server %d, my_server %d, num_servers %d\n",my_rank,is_server,my_server,num_servers);
 
     const int array_size=TEST_REQUEST_SIZE;
 
@@ -147,18 +135,18 @@ int main (int argc,char* argv[])
     std::unordered_map<KeyType,std::array<int, array_size>> lmap=std::unordered_map<KeyType,std::array<int, array_size>>();
 
     MPI_Comm client_comm;
-    MPI_Comm_split(MPI_COMM_WORLD, !is_server, my_rank, &client_comm);
-    int client_comm_size;
-    MPI_Comm_size(client_comm, &client_comm_size);
-   /* if(is_server){
-        std::function<int(int)> func=[](int x){ std::cout<<x<<std::endl;return x; };
-        int a;
-        std::function<std::pair<bool,int>(KeyType&,std::array<int, array_size>&,std::string,int)> putFunc(std::bind(&hcl::unordered_map<KeyType,std::array<int,
-                                                                                                                    array_size>>::LocalPutWithCallback<int,int>,map,std::placeholders::_1, std::placeholders::_2,std::placeholders::_3, std::placeholders::_4));
-        map->Bind("CB_Put", func, "APut",putFunc);
-    }*/
+    bool is_client = true;
+    int client_comm_size = 1;
+    if(comm_size > 1){
+        MPI_Comm_split(MPI_COMM_WORLD, !is_server, my_rank, &client_comm);
+        MPI_Comm_size(client_comm, &client_comm_size);
+        is_client = !is_server;
+    }else{
+        client_comm=MPI_COMM_WORLD;
+    }
+
     MPI_Barrier(MPI_COMM_WORLD);
-    if (!is_server) {
+    if (is_client) {
         Timer llocal_map_timer=Timer();
         std::hash<KeyType> keyHash;
         /*Local std::map test*/
@@ -234,7 +222,7 @@ int main (int argc,char* argv[])
         }
 
         MPI_Barrier(client_comm);
-
+        map->server_on_node=false;
         Timer remote_map_timer=Timer();
         /*Remote map test*/
         for(int i=0;i<num_request;i++){
