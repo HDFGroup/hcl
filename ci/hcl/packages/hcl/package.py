@@ -24,24 +24,16 @@ from spack import *
 
 
 class Hcl(CMakePackage):
-    """FIXME: Put a proper description of your package here."""
 
-    homepage = "https://www.example.com"
-    url     = "https://bitbucket.org/scs-io/hcl/get/master.tar.bz2"
-    git     = "https://bitbucket.org/scs-io/hcl.git"
-    # notify when the package is updated.
-    # maintainers = ['github_user1', 'github_user2']
-    #version('master', sha256='2857965ed3df95cc87f23c6b7c53b9403ceb87504b7c2be88b1c68ea9525d381')
-    version('0.0.4', branch='release/0.0.4')
-    version('0.0.5', branch='0.0.5')
-    version('master', branch='master')
-    depends_on('gcc@9.3.0')
-    depends_on('mpi')
+    url="https://github.com/HDFGroup/hcl/tarball/master"
+    git="https://github.com/HDFGroup/hcl.git"
+
+    version('dev', branch='dev')
+    version('0.1', branch='v0.1')
+    depends_on('gcc@8.3.0')
+    depends_on('mpich@3.3.2~fortran')
     depends_on('rpclib@2.2.1')
     depends_on('boost@1.74.0')
-    def url_for_version(self, version):
-        url = "https://bitbucket.org/scs-io/hcl/get/{0}.tar.bz2"
-        return url.format(version.dashed)
 
     def cmake_args(self):
         args = ['-DCMAKE_INSTALL_PREFIX={}'.format(self.prefix),
