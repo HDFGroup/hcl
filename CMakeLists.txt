@@ -4,6 +4,8 @@ project(hcl VERSION 1.0.0 DESCRIPTION "HCL: A library for flexible distributed d
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-2 -g3")
+set(RPC_LIB_FLAGS "-L${CMAKE_PREFIX_PATH}/lib")
+include_directories(${CMAKE_PREFIX_PATH}/include)
 
 option(HCL_ENABLE_RPCLIB "allow hcl to use RPCLIB" ON)
 option(HCL_ENABLE_THALLIUM_TCP "allow hcl to use RPCLIB" OFF)
