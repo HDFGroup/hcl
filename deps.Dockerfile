@@ -59,4 +59,4 @@ RUN echo ". $SPACK_ROOT/share/spack/setup-env.sh" >> /root/.bashrc
 
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get install -y cmake
+RUN apt-get install -y cmake pkg-config
