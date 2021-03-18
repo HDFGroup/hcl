@@ -124,3 +124,23 @@ hcl::unordered_map(std::string name);
  * `name`: A unique name used to identify the shared memory.
 
 See the [wiki](https://github.com/HDFGroup/hcl/wiki) for more information.
+
+
+## Refer to this work using this citation
+
+### Citation
+```
+H. Devarajan, A. Kougkas, K. Bateman, and X. Sun. "HCL: Distributing Parallel Data Structures in Extreme Scales." In 2020 IEEE International Conference on Cluster Computing (CLUSTER). IEEE, 2020.
+```
+
+### Bibtex
+
+```
+@inproceedings{devarajan2020hcl,
+  title={HCL: Distributing Parallel Data Structures in Extreme Scales},
+  author={Devarajan, Hariharan and Kougkas, Anthony and Bateman, Keith and Sun, Xian-He},
+  booktitle={2020 IEEE International Conference on Cluster Computing (CLUSTER)},
+  year={2020},
+  organization={IEEE}
+}
+```
