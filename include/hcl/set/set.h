@@ -1,22 +1,14 @@
-/*
- * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
- *
- * This file is part of HCL
- * 
- * HCL is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Distributed under BSD 3-Clause license.                                   *
+ * Copyright by The HDF Group.                                               *
+ * Copyright by the Illinois Institute of Technology.                        *
+ * All rights reserved.                                                      *
+ *                                                                           *
+ * This file is part of Hermes. The full Hermes copyright notice, including  *
+ * terms governing use, modification, and redistribution, is contained in    *
+ * the COPYING file, which can be found at the top directory. If you do not  *
+ * have access to the file, you may request a copy from help@hdfgroup.org.   *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef INCLUDE_HCL_SET_SET_H_
 #define INCLUDE_HCL_SET_SET_H_
@@ -29,6 +21,8 @@
 #include <hcl/common/singleton.h>
 #include <hcl/common/debug.h>
 #include <hcl/communication/rpc_factory.h>
+/** MPI Headers**/
+#include <mpi.h>
 /** RPC Lib Headers**/
 #ifdef HCL_ENABLE_RPCLIB
 #include <rpc/server.h>
@@ -46,8 +40,8 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/algorithm/string.hpp>
 /** Standard C++ Headers**/
-#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -56,42 +50,43 @@
 #include <set>
 #include <vector>
 #include <boost/interprocess/managed_mapped_file.hpp>
+#include <hcl/common/container.h>
 
 namespace hcl {
 /**
- * This is a Distributed Set Class. It uses shared memory + RPC to
+ * This is a Distributed Set Class. It uses shared memory + RPC + MPI to
  * achieve the data structure.
  *
  * @tparam MappedType, the value of the Set
  */
 
-template<typename KeyType, typename Compare =
-         std::less<KeyType>>
-class set {
+template<typename KeyType, typename Hash = std::hash<KeyType>, typename Compare =
+         std::less<KeyType>, class Allocator=nullptr_t ,class SharedType=nullptr_t>
+class set :public container {
   private:
-    std::hash<KeyType> keyHash;
     /** Class Typedefs for ease of use **/
     typedef boost::interprocess::allocator<KeyType, boost::interprocess::managed_mapped_file::segment_manager>
     ShmemAllocator;
     typedef boost::interprocess::set<KeyType, Compare, ShmemAllocator>
     MySet;
     /** Class attributes**/
-    int num_servers;
-    uint16_t  my_server;
-    std::shared_ptr<RPC> rpc;
-    really_long memory_allocated;
-    bool is_server;
-    boost::interprocess::managed_mapped_file segment;
-    CharStruct name, func_prefix;
+    Hash keyHash;
     MySet *myset;
-    boost::interprocess::interprocess_mutex* mutex;
-    bool server_on_node;
-    CharStruct backed_file;
 
   public:
     ~set();
 
-    explicit set(CharStruct name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") + "_TEST_SET");
+    void construct_shared_memory() override;
+
+    void open_shared_memory() override;
+
+    void bind_functions() override;
+
+    MySet * data(){
+        if(server_on_node || is_server) return myset;
+        else nullptr;
+    }
+    explicit set(CharStruct name_ = "TEST_SET", uint16_t port=HCL_CONF->RPC_PORT);
 
     bool LocalPut(KeyType &key);
     bool LocalGet(KeyType &key);

@@ -1,22 +1,14 @@
-/*
- * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
- *
- * This file is part of HCL
- * 
- * HCL is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Distributed under BSD 3-Clause license.                                   *
+ * Copyright by The HDF Group.                                               *
+ * Copyright by the Illinois Institute of Technology.                        *
+ * All rights reserved.                                                      *
+ *                                                                           *
+ * This file is part of Hermes. The full Hermes copyright notice, including  *
+ * terms governing use, modification, and redistribution, is contained in    *
+ * the COPYING file, which can be found at the top directory. If you do not  *
+ * have access to the file, you may request a copy from help@hdfgroup.org.   *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef INCLUDE_HCL_PRIORITY_QUEUE_PRIORITY_QUEUE_H_
 #define INCLUDE_HCL_PRIORITY_QUEUE_PRIORITY_QUEUE_H_
@@ -29,6 +21,8 @@
 #include <hcl/common/singleton.h>
 #include <hcl/common/debug.h>
 #include <hcl/common/typedefs.h>
+/** MPI Headers**/
+#include <mpi.h>
 /** RPC Lib Headers**/
 #ifdef HCL_ENABLE_RPCLIB
 #include <rpc/server.h>
@@ -45,8 +39,8 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/algorithm/string.hpp>
 /** Standard C++ Headers**/
-#include <cstdlib>
 #include <iostream>
 #include <functional>
 #include <utility>
@@ -54,6 +48,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <hcl/common/container.h>
 
 /** Namespaces Uses **/
 namespace bip = boost::interprocess;
@@ -62,41 +57,35 @@ namespace bip = boost::interprocess;
 
 namespace hcl {
 /**
- * This is a Distributed priority_queue Class. It uses shared memory + RPC
+ * This is a Distributed priority_queue Class. It uses shared memory + RPC + MPI
  * to achieve the data structure.
  *
  * @tparam MappedType, the value of the priority_queue
  */
-template<typename MappedType, typename Compare = std::less<MappedType>>
-class priority_queue {
+template<typename MappedType, typename Compare = std::less<MappedType>, class Allocator=nullptr_t ,class SharedType=nullptr_t>
+class priority_queue:public container {
   private:
     /** Class Typedefs for ease of use **/
-    typedef bip::allocator<MappedType,
-                           bip::managed_mapped_file::segment_manager>
+    typedef bip::allocator<MappedType, bip::managed_mapped_file::segment_manager>
     ShmemAllocator;
-    typedef std::priority_queue<MappedType,
-                                std::vector<MappedType, ShmemAllocator>, Compare>
-    Queue;
+    typedef std::priority_queue<MappedType, std::vector<MappedType, ShmemAllocator>, Compare> Queue;
 
     /** Class attributes**/
-    int num_servers;
-    uint16_t  my_server;
-    std::shared_ptr<RPC> rpc;
-    really_long memory_allocated;
-    bool is_server;
-    boost::interprocess::managed_mapped_file segment;
-    std::string name, func_prefix;
     Queue *queue;
-    boost::interprocess::interprocess_mutex* mutex;
-    bool server_on_node;
-    CharStruct backed_file;
-
   public:
     ~priority_queue();
 
-    explicit priority_queue(std::string name_ = std::string(std::getenv("USER") ? std::getenv("USER") : "") +
-                            "_TEST_PRIORITY_QUEUE");
+    void construct_shared_memory() override;
 
+    void open_shared_memory() override;
+
+    void bind_functions() override;
+
+    explicit priority_queue(CharStruct name_ = "TEST_PRIORITY_QUEUE", uint16_t port=HCL_CONF->RPC_PORT);
+    Queue * data(){
+        if(server_on_node || is_server) return queue;
+        else nullptr;
+    }
     bool LocalPush(MappedType &data);
     std::pair<bool, MappedType> LocalPop();
     std::pair<bool, MappedType> LocalTop();

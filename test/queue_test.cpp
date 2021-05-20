@@ -1,29 +1,26 @@
-/*
- * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
- *
- * This file is part of HCL
- *
- * HCL is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Distributed under BSD 3-Clause license.                                   *
+ * Copyright by The HDF Group.                                               *
+ * Copyright by the Illinois Institute of Technology.                        *
+ * All rights reserved.                                                      *
+ *                                                                           *
+ * This file is part of Hermes. The full Hermes copyright notice, including  *
+ * terms governing use, modification, and redistribution, is contained in    *
+ * the COPYING file, which can be found at the top directory. If you do not  *
+ * have access to the file, you may request a copy from help@hdfgroup.org.   *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <functional>
+#include <utility>
+#include <mpi.h>
+#include <iostream>
+#include <signal.h>
+#include <execinfo.h>
 #include <chrono>
 #include <queue>
-
-#include <mpi.h>
-
 #include <hcl/common/data_structures.h>
 #include <hcl/queue/queue.h>
 
@@ -51,13 +48,13 @@ struct KeyType{
     bool Contains(const KeyType &o) const {
         return a==o.a;
     }
-#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
-    template<typename A>
-    void serialize(A& ar) const {
-        ar & a;
-    }
-#endif
 };
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+template<typename A>
+void serialize(A &ar, KeyType &a) {
+    ar & a.a;
+}
+#endif
 namespace std {
     template<>
     struct hash<KeyType> {
@@ -79,7 +76,7 @@ int main (int argc,char* argv[])
     int comm_size,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
-    int ranks_per_server=comm_size,num_request=10000;
+    int ranks_per_server=comm_size,num_request=100;
     long size_of_request=1000;
     bool debug=false;
     bool server_on_node=false;
@@ -99,7 +96,7 @@ int main (int argc,char* argv[])
     if (debug) {
         printf("%s/%d: %d\n", processor_name, my_rank, getpid());
     }
-
+    
     if(debug && my_rank==0){
         printf("%d ready for attach\n", comm_size);
         fflush(stdout);
@@ -107,7 +104,7 @@ int main (int argc,char* argv[])
     }
     MPI_Barrier(MPI_COMM_WORLD);
     bool is_server=(my_rank+1) % ranks_per_server == 0;
-    size_t my_server=my_rank / ranks_per_server;
+    int my_server=my_rank / ranks_per_server;
     int num_servers=comm_size/ranks_per_server;
 
     // The following is used to switch to 40g network on Ares.
@@ -120,7 +117,7 @@ int main (int argc,char* argv[])
 
     size_t size_of_elem = sizeof(int);
 
-    printf("rank %d, is_server %d, my_server %zu, num_servers %d\n",my_rank,is_server,my_server,num_servers);
+    printf("rank %d, is_server %d, my_server %d, num_servers %d\n",my_rank,is_server,my_server,num_servers);
 
     const int array_size=TEST_REQUEST_SIZE;
 
@@ -130,7 +127,7 @@ int main (int argc,char* argv[])
 
     std::array<int,array_size> my_vals=std::array<int,array_size>();
 
-
+    
     HCL_CONF->IS_SERVER = is_server;
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
@@ -211,7 +208,7 @@ int main (int argc,char* argv[])
             size_t val=my_server;
             auto key=KeyType(val);
             local_get_queue_timer.resumeTime();
-            size_t key_hash = keyHash(key)%num_servers;
+            size_t key_hash = keyHash(KeyType(val))%num_servers;
             if (key_hash == my_server && is_server){}
             auto result = queue->Pop(my_server_key);
             local_get_queue_timer.pauseTime();
@@ -260,7 +257,7 @@ int main (int argc,char* argv[])
             size_t val = my_server+1;
             auto key=KeyType(val);
             remote_get_queue_timer.resumeTime();
-            size_t key_hash = keyHash(key)%num_servers;
+            size_t key_hash = keyHash(KeyType(val))%num_servers;
             if (key_hash == my_server && is_server){}
             queue->Pop(my_server_remote_key);
             remote_get_queue_timer.pauseTime();

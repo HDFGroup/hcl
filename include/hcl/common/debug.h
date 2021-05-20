@@ -1,22 +1,14 @@
-/*
- * Copyright (C) 2019  Hariharan Devarajan, Keith Bateman
- *
- * This file is part of HCL
- * 
- * HCL is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Distributed under BSD 3-Clause license.                                   *
+ * Copyright by The HDF Group.                                               *
+ * Copyright by the Illinois Institute of Technology.                        *
+ * All rights reserved.                                                      *
+ *                                                                           *
+ * This file is part of Hermes. The full Hermes copyright notice, including  *
+ * terms governing use, modification, and redistribution, is contained in    *
+ * the COPYING file, which can be found at the top directory. If you do not  *
+ * have access to the file, you may request a copy from help@hdfgroup.org.   *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 /*-------------------------------------------------------------------------
  *
@@ -49,6 +41,7 @@ inline void handler(int sig) {
     size_t size;
     // get void*'s for all entries on the stack
     size = backtrace(array, 300);
+    int rank, comm_size;
     // print out all the frames to stderr
     fprintf(stderr, "Error: signal %d\n", sig);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
@@ -82,7 +75,10 @@ inline void handler(int sig) {
 #define DBGVAR3(var1, var2, var3)
 #define DBGMSG(msg)
 #endif
+#endif  // INCLUDE_HCL_COMMON_DEBUG_H_
 
+#ifndef INCLUDE_HCL_COMMON_DEBUG_TIMER_H_
+#define INCLUDE_HCL_COMMON_DEBUG_TIMER_H_
 /**
  * Time all functions and instrument it
  */
@@ -114,12 +110,18 @@ class Timer {
     std::chrono::high_resolution_clock::time_point t1;
     double elapsed_time;
 };
+
+#endif  // INCLUDE_HCL_COMMON_DEBUG_TIMER_H_
+#ifndef INCLUDE_HCL_COMMON_DEBUG_AUTOTRACE_H_
+#define INCLUDE_HCL_COMMON_DEBUG_AUTOTRACE_H_
 /**
  * Implement Auto tracing Mechanism.
  */
 using std::cout;
 using std::endl;
 using std::string;
+
+using namespace std;
 
 class AutoTrace
 {
@@ -130,12 +132,6 @@ class AutoTrace
 #if defined(HCL_TRACE) || defined(HCL_TIMER)
     string m_line;
 #endif
-
-    struct ArgSink {
-        template<typename ...Args>
-        ArgSink(Args const & ...) {}
-    };
-
   public:
     template <typename... Args>
     AutoTrace(
@@ -169,9 +165,6 @@ class AutoTrace
             std::apply([&stream](auto&&... args) {((stream << args << ", "), ...);}, args_obj);
         }
         stream << ");";
-#else
-        // Swallow args when they're not used. Silences compiler warnings.
-        ArgSink(args...);
 #endif
 #if defined(HCL_TRACE) || defined(HCL_TIMER)
         stream <<"start"<< endl;
@@ -207,6 +200,10 @@ class AutoTrace
     }
 };
 
+int AutoTrace::rank=-1;
+int AutoTrace::item=0;
+#endif  // INCLUDE_HCL_COMMON_DEBUG_AUTOTRACE_H_
 
 
-#endif  // INCLUDE_HCL_COMMON_DEBUG_H_
+
+
