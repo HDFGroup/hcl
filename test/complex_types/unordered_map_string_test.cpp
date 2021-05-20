@@ -48,7 +48,6 @@ struct KeyType{
     bool Contains(const KeyType &o) const {
         return a==o.a;
     }
-
 };
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 template<typename A>
@@ -78,14 +77,16 @@ int main (int argc,char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
     int ranks_per_server=comm_size,num_request=100;
-    long size_of_request=1000;
+    long size_of_request=1024*16;
     bool debug=false;
     bool server_on_node=false;
-    if(argc > 1)    ranks_per_server = atoi(argv[1]);
-    if(argc > 2)    num_request = atoi(argv[2]);
-    if(argc > 3)    size_of_request = (long)atol(argv[3]);
-    if(argc > 4)    server_on_node = (bool)atoi(argv[4]);
-    if(argc > 5)    debug = (bool)atoi(argv[5]);
+    std::string server_lists = "./simple_types/server_list";
+    if (argc > 1) ranks_per_server = atoi(argv[1]);
+    if (argc > 2) num_request = atoi(argv[2]);
+    if (argc > 3) size_of_request = (long) atol(argv[3]);
+    if (argc > 4) server_on_node = (bool) atoi(argv[4]);
+    if (argc > 5) debug = (bool) atoi(argv[5]);
+    if (argc > 6) server_lists = argv[6];
 
     int len;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
@@ -103,50 +104,36 @@ int main (int argc,char* argv[])
     bool is_server=(my_rank+1) % ranks_per_server == 0;
     int my_server=my_rank / ranks_per_server;
     int num_servers=comm_size/ranks_per_server;
-    std::string proc_name = std::string(processor_name);
-    size_t size_of_elem = sizeof(int);
-
-    printf("rank %d, is_server %d, my_server %d, num_servers %d\n",my_rank,is_server,my_server,num_servers);
-
-    const int array_size=TEST_REQUEST_SIZE;
-
-    if (size_of_request != array_size) {
-        printf("Please set TEST_REQUEST_SIZE in include/hcl/common/constants.h instead. Testing with %d\n", array_size);
-    }
-
-    std::array<int,array_size> my_vals=std::array<int,array_size>();
-
 
     HCL_CONF->IS_SERVER = is_server;
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
     HCL_CONF->SERVER_ON_NODE = server_on_node || is_server;
-    HCL_CONF->SERVER_LIST_PATH = "./server_list";
+    HCL_CONF->SERVER_LIST_PATH = server_lists;
 
-    hcl::unordered_map<KeyType,std::array<int, array_size>> *map;
+    std::string my_vals(size_of_request,'x');
+
+
+    typedef boost::interprocess::allocator<char, boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
+    typedef bip::basic_string<char, std::char_traits<char>, CharAllocator> MappedUnitString;
+
+    hcl::unordered_map<KeyType, std::string, std::hash<KeyType>,CharAllocator, MappedUnitString> *map;
     if (is_server) {
-        map = new hcl::unordered_map<KeyType,std::array<int,array_size>>();
+        map = new hcl::unordered_map<KeyType,std::string,std::hash<KeyType>,CharAllocator, MappedUnitString>();
     }
     MPI_Barrier(MPI_COMM_WORLD);
     if (!is_server) {
-        map = new hcl::unordered_map<KeyType,std::array<int,array_size>>();
+        map = new hcl::unordered_map<KeyType,std::string,std::hash<KeyType>,CharAllocator, MappedUnitString>();
     }
 
-    std::unordered_map<KeyType,std::array<int, array_size>> lmap=std::unordered_map<KeyType,std::array<int, array_size>>();
+    std::unordered_map<KeyType,std::string> lmap=std::unordered_map<KeyType,std::string>();
 
     MPI_Comm client_comm;
-    bool is_client = true;
-    int client_comm_size = 1;
-    if(comm_size > 1){
-        MPI_Comm_split(MPI_COMM_WORLD, !is_server, my_rank, &client_comm);
-        MPI_Comm_size(client_comm, &client_comm_size);
-        is_client = !is_server;
-    }else{
-        client_comm=MPI_COMM_WORLD;
-    }
-
+    MPI_Comm_split(MPI_COMM_WORLD, !is_server, my_rank, &client_comm);
+    int client_comm_size;
+    MPI_Comm_size(client_comm, &client_comm_size);
     MPI_Barrier(MPI_COMM_WORLD);
-    if (is_client) {
+    if (!is_server) {
         Timer llocal_map_timer=Timer();
         std::hash<KeyType> keyHash;
         /*Local std::map test*/
@@ -159,7 +146,7 @@ int main (int argc,char* argv[])
             llocal_map_timer.pauseTime();
         }
 
-        double llocal_map_throughput=num_request/llocal_map_timer.getElapsedTime()*1000*size_of_elem*my_vals.size()/1024/1024;
+        double llocal_map_throughput=num_request/llocal_map_timer.getElapsedTime()*1000*size_of_request*my_vals.size()/1024/1024;
 
         Timer llocal_get_map_timer=Timer();
         for(int i=0;i<num_request;i++){
@@ -171,7 +158,7 @@ int main (int argc,char* argv[])
             auto result = iterator->second;
             llocal_get_map_timer.pauseTime();
         }
-        double llocal_get_map_throughput=num_request/llocal_get_map_timer.getElapsedTime()*1000*size_of_elem*my_vals.size()/1024/1024;
+        double llocal_get_map_throughput=num_request/llocal_get_map_timer.getElapsedTime()*1000*size_of_request*my_vals.size()/1024/1024;
 
         if (my_rank == 0) {
             printf("llocal_map_throughput put: %f\n",llocal_map_throughput);
@@ -185,10 +172,11 @@ int main (int argc,char* argv[])
             size_t val=my_server;
             auto key=KeyType(val);
             local_map_timer.resumeTime();
-            map->Put(key,my_vals);
+            auto result = map->Put(key,my_vals);
             local_map_timer.pauseTime();
+            assert(result);
         }
-        double local_map_throughput=num_request/local_map_timer.getElapsedTime()*1000*size_of_elem*my_vals.size()/1024/1024;
+        double local_map_throughput=num_request/local_map_timer.getElapsedTime()*1000*size_of_request*my_vals.size()/1024/1024;
 
         Timer local_get_map_timer=Timer();
         /*Local map test*/
@@ -198,9 +186,11 @@ int main (int argc,char* argv[])
             local_get_map_timer.resumeTime();
             auto result = map->Get(key);
             local_get_map_timer.pauseTime();
+            assert(result.first);
+            assert(result.second.size() == size_of_request);
         }
 
-        double local_get_map_throughput=num_request/local_get_map_timer.getElapsedTime()*1000*size_of_elem*my_vals.size()/1024/1024;
+        double local_get_map_throughput=num_request/local_get_map_timer.getElapsedTime()*1000*size_of_request*my_vals.size()/1024/1024;
 
         double local_put_tp_result, local_get_tp_result;
         if (client_comm_size > 1) {
@@ -222,18 +212,18 @@ int main (int argc,char* argv[])
         }
 
         MPI_Barrier(client_comm);
-        map->server_on_node=false;
+
         Timer remote_map_timer=Timer();
         /*Remote map test*/
         for(int i=0;i<num_request;i++){
             size_t val = my_server+1;
             auto key=KeyType(val);
             remote_map_timer.resumeTime();
-            map->Put(key
-                    ,my_vals);
+            auto result = map->Put(key ,my_vals);
             remote_map_timer.pauseTime();
+            assert(result);
         }
-        double remote_map_throughput=num_request/remote_map_timer.getElapsedTime()*1000*size_of_elem*my_vals.size()/1024/1024;
+        double remote_map_throughput=num_request/remote_map_timer.getElapsedTime()*1000*size_of_request*my_vals.size()/1024/1024;
 
         MPI_Barrier(client_comm);
 
@@ -243,10 +233,12 @@ int main (int argc,char* argv[])
             size_t val = my_server+1;
             auto key=KeyType(val);
             remote_get_map_timer.resumeTime();
-            map->Get(key);
+            auto result = map->Get(key);
             remote_get_map_timer.pauseTime();
+            assert(result.first);
+            assert(result.second.size() == size_of_request);
         }
-        double remote_get_map_throughput=num_request/remote_get_map_timer.getElapsedTime()*1000*size_of_elem*my_vals.size()/1024/1024;
+        double remote_get_map_throughput=num_request/remote_get_map_timer.getElapsedTime()*1000*size_of_request*my_vals.size()/1024/1024;
 
         double remote_put_tp_result, remote_get_tp_result;
         if (client_comm_size > 1) {
