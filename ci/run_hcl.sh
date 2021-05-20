@@ -1,7 +1,7 @@
 #!/bin/bash
 
 pushd build
-
+PATH=${INSTALL_DIR}/bin:${PATH}
 if [ "${HCL_ENABLE_RPCLIB}" = "ON" ]; then
     ctest -VV
 fi
