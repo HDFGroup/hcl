@@ -24,34 +24,118 @@
 #include <hcl/common/data_structures.h>
 #include <hcl/queue/queue.h>
 
-struct KeyType{
-    size_t a;
-    KeyType():a(0){}
-    KeyType(size_t a_):a(a_){}
+const int KEY_SIZE=1000;
+
+struct KeyType {
+    std::array<int,KEY_SIZE> a;
+
+    KeyType() : a() {}
+
+    KeyType(std::array<int,KEY_SIZE> a_) : a(a_) {}
+    KeyType(int val) {
+        for(int i=0;i<a.size();++i){
+            a[i]=val;
+        }
+    }
 #ifdef HCL_ENABLE_RPCLIB
-    MSGPACK_DEFINE(a);
+    MSGPACK_DEFINE (a);
 #endif
+
     /* equal operator for comparing two Matrix. */
     bool operator==(const KeyType &o) const {
-        return a == o.a;
+        if(o.a.size() != a.size()) return false;
+        for(int i=0;i<a.size();++i){
+            if(o.a[i] != a[i]) return false;
+        }
+        return true;
     }
-    KeyType& operator=( const KeyType& other ) {
+
+    KeyType &operator=(const KeyType &other) {
         a = other.a;
         return *this;
     }
+
     bool operator<(const KeyType &o) const {
-        return a < o.a;
+        if(o.a.size() < a.size()) return false;
+        if(o.a.size() > a.size()) return true;
+        for(int i=0;i<a.size();++i){
+            if(o.a[i] < a[i]) return false;
+            if(o.a[i] > a[i]) return true;
+        }
+        return false;
     }
+
     bool operator>(const KeyType &o) const {
-        return a > o.a;
+        return !(a < o.a);
     }
+
     bool Contains(const KeyType &o) const {
-        return a==o.a;
+        return a == o.a;
     }
+
 };
+
 #if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
 template<typename A>
 void serialize(A &ar, KeyType &a) {
+    ar & a.a;
+}
+#endif
+
+struct ValueType {
+    std::vector<int> a;
+
+    ValueType() : a() {}
+
+    ValueType(std::vector<int> a_) : a(a_) {}
+    ValueType(size_t num_elements, int val):a(num_elements,val) {
+    }
+
+#ifdef HCL_ENABLE_RPCLIB
+    MSGPACK_DEFINE (a);
+#endif
+
+    /* equal operator for comparing two Matrix. */
+    bool operator==(const ValueType &o) const {
+        if(o.a.size() != a.size()) return false;
+        for(int i=0;i<a.size();++i){
+            if(o.a[i] != a[i]) return false;
+        }
+        return true;
+    }
+
+    ValueType &operator=(const ValueType &other) {
+        a = other.a;
+        return *this;
+    }
+
+    bool operator<(const ValueType &o) const {
+        if(o.a.size() < a.size()) return false;
+        if(o.a.size() > a.size()) return true;
+        for(int i=0;i<a.size();++i){
+            if(o.a[i] < a[i]) return false;
+            if(o.a[i] > a[i]) return true;
+        }
+        return false;
+    }
+
+    bool operator>(const ValueType &o) const {
+        return !(a < o.a);
+    }
+
+    bool Contains(const ValueType &o) const {
+        return a == o.a;
+    }
+
+    size_t size(){
+        return a.size();
+    }
+
+};
+
+#if defined(HCL_ENABLE_THALLIUM_TCP) || defined(HCL_ENABLE_THALLIUM_ROCE)
+template<typename A>
+void serialize(A &ar, ValueType &a) {
     ar & a.a;
 }
 #endif
@@ -59,7 +143,11 @@ namespace std {
     template<>
     struct hash<KeyType> {
         size_t operator()(const KeyType &k) const {
-            return k.a;
+            size_t hash_val = hash<int>()(k.a[0]);
+            for(int i=1;i<k.a.size();++i){
+                hash_val ^= hash<int>()(k.a[0]);
+            }
+            return hash_val;
         }
     };
 }
@@ -80,16 +168,14 @@ int main (int argc,char* argv[])
     long size_of_request=1000;
     bool debug=false;
     bool server_on_node=false;
-    if(argc > 1)    ranks_per_server = atoi(argv[1]);
-    if(argc > 2)    num_request = atoi(argv[2]);
-    if(argc > 3)    size_of_request = (long)atol(argv[3]);
-    if(argc > 4)    server_on_node = (bool)atoi(argv[4]);
-    if(argc > 5)    debug = (bool)atoi(argv[5]);
+    std::string server_lists = "./simple_types/server_list";
+    if (argc > 1) ranks_per_server = atoi(argv[1]);
+    if (argc > 2) num_request = atoi(argv[2]);
+    if (argc > 3) size_of_request = (long) atol(argv[3]);
+    if (argc > 4) server_on_node = (bool) atoi(argv[4]);
+    if (argc > 5) debug = (bool) atoi(argv[5]);
+    if (argc > 6) server_lists = argv[6];
 
-   /* if(comm_size/ranks_per_server < 2){
-        perror("comm_size/ranks_per_server should be atleast 2 for this test\n");
-        exit(-1);
-    }*/
     int len;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Get_processor_name(processor_name, &len);
@@ -107,32 +193,18 @@ int main (int argc,char* argv[])
     int my_server=my_rank / ranks_per_server;
     int num_servers=comm_size/ranks_per_server;
 
-    // The following is used to switch to 40g network on Ares.
-    // This is necessary when we use RoCE on Ares.
-    std::string proc_name = std::string(processor_name);
-    /*int split_loc = proc_name.find('.');
-    std::string node_name = proc_name.substr(0, split_loc);
-    std::string extra_info = proc_name.substr(split_loc+1, string::npos);
-    proc_name = node_name + "-40g." + extra_info;*/
+    typedef int SimpleType;
+    typedef std::vector<SimpleType> MyType;
+    auto num_elements = size_of_request / sizeof(SimpleType);
+    auto my_vals = MyType(num_elements, my_rank);
+    size_t size_of_elem = sizeof(SimpleType);
 
-    size_t size_of_elem = sizeof(int);
 
-    printf("rank %d, is_server %d, my_server %d, num_servers %d\n",my_rank,is_server,my_server,num_servers);
-
-    const int array_size=TEST_REQUEST_SIZE;
-
-    if (size_of_request != array_size) {
-        printf("Please set TEST_REQUEST_SIZE in include/hcl/common/constants.h instead. Testing with %d\n", array_size);
-    }
-
-    std::array<int,array_size> my_vals=std::array<int,array_size>();
-
-    
     HCL_CONF->IS_SERVER = is_server;
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
     HCL_CONF->SERVER_ON_NODE = server_on_node || is_server;
-    HCL_CONF->SERVER_LIST_PATH = "./server_list";
+    HCL_CONF->SERVER_LIST_PATH = server_lists;
 
     hcl::queue<KeyType> *queue;
     if (is_server) {

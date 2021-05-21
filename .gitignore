@@ -34,3 +34,5 @@ GPATH
 GRTAGS
 GTAGS
 
+/cmake-build-rpclib/
+/cmake-build-thallium/
